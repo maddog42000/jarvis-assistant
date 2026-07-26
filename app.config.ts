@@ -54,7 +54,8 @@ const config: ExpoConfig = {
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSMicrophoneUsageDescription": "Jarvis needs microphone access to listen to your voice commands.",
-        "NSSpeechRecognitionUsageDescription": "Jarvis needs speech recognition to understand your voice commands."
+        "NSSpeechRecognitionUsageDescription": "Jarvis needs speech recognition to understand your voice commands.",
+        "AVAudioDefaultToSpeaker": true
       }
   },
   android: {
@@ -67,7 +68,7 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-      permissions: ["POST_NOTIFICATIONS", "RECORD_AUDIO", "INTERNET"],
+      permissions: ["POST_NOTIFICATIONS", "RECORD_AUDIO", "INTERNET", "MODIFY_AUDIO_SETTINGS"],
     intentFilters: [
       {
         action: "VIEW",
@@ -93,12 +94,6 @@ const config: ExpoConfig = {
       "expo-audio",
       {
         microphonePermission: "Allow $(PRODUCT_NAME) to access your microphone.",
-      },
-    ],
-    [
-      "expo-speech",
-      {
-        speechRecognitionPermission: "Allow $(PRODUCT_NAME) to access speech recognition.",
       },
     ],
     "expo-speech-recognition",
