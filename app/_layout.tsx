@@ -8,6 +8,7 @@ import "react-native-reanimated";
 import { Platform } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
+import { ChatProvider } from "@/lib/chat-context";
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -100,20 +101,24 @@ export default function RootLayout() {
   if (shouldOverrideSafeArea) {
     return (
       <ThemeProvider>
-        <SafeAreaProvider initialMetrics={providerInitialMetrics}>
-          <SafeAreaFrameContext.Provider value={frame}>
-            <SafeAreaInsetsContext.Provider value={insets}>
-              {content}
-            </SafeAreaInsetsContext.Provider>
-          </SafeAreaFrameContext.Provider>
-        </SafeAreaProvider>
+        <ChatProvider>
+          <SafeAreaProvider initialMetrics={providerInitialMetrics}>
+            <SafeAreaFrameContext.Provider value={frame}>
+              <SafeAreaInsetsContext.Provider value={insets}>
+                {content}
+              </SafeAreaInsetsContext.Provider>
+            </SafeAreaFrameContext.Provider>
+          </SafeAreaProvider>
+        </ChatProvider>
       </ThemeProvider>
     );
   }
 
   return (
     <ThemeProvider>
-      <SafeAreaProvider initialMetrics={providerInitialMetrics}>{content}</SafeAreaProvider>
+      <ChatProvider>
+        <SafeAreaProvider initialMetrics={providerInitialMetrics}>{content}</SafeAreaProvider>
+      </ChatProvider>
     </ThemeProvider>
   );
 }

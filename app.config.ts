@@ -32,7 +32,7 @@ const env = {
   appSlug: "jarvis-assistant",
   // S3 URL of the app logo - set this to the URL returned by generate_image when creating custom logo
   // Leave empty to use the default icon from assets/images/icon.png
-  logoUrl: "",
+  logoUrl: "/manus-storage/icon_0d9bf5e6.png",
   scheme: schemeFromBundleId,
   iosBundleId: bundleId,
   androidPackage: bundleId,
@@ -41,6 +41,7 @@ const env = {
 const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
+  description: "A sophisticated AI assistant with voice control, offline capabilities, and beautiful animations",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
@@ -56,7 +57,7 @@ const config: ExpoConfig = {
   },
   android: {
     adaptiveIcon: {
-      backgroundColor: "#E6F4FE",
+      backgroundColor: "#0f1419",
       foregroundImage: "./assets/images/android-icon-foreground.png",
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",

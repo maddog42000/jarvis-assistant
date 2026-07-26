@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -29,10 +30,17 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="chat"
         options={{
-          title: "Home",
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: "Chat",
+          tabBarIcon: ({ color }) => <MaterialIcons size={28} name="chat-bubble" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Settings",
+          tabBarIcon: ({ color }) => <MaterialIcons size={28} name="settings" color={color} />,
         }}
       />
     </Tabs>
