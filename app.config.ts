@@ -51,8 +51,10 @@ const config: ExpoConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,
-    "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSMicrophoneUsageDescription": "Jarvis needs microphone access to listen to your voice commands.",
+        "NSSpeechRecognitionUsageDescription": "Jarvis needs speech recognition to understand your voice commands."
       }
   },
   android: {
@@ -65,7 +67,7 @@ const config: ExpoConfig = {
     edgeToEdgeEnabled: true,
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-    permissions: ["POST_NOTIFICATIONS"],
+      permissions: ["POST_NOTIFICATIONS", "RECORD_AUDIO", "INTERNET"],
     intentFilters: [
       {
         action: "VIEW",
@@ -94,6 +96,13 @@ const config: ExpoConfig = {
       },
     ],
     [
+      "expo-speech",
+      {
+        speechRecognitionPermission: "Allow $(PRODUCT_NAME) to access speech recognition.",
+      },
+    ],
+    "expo-speech-recognition",
+    [
       "expo-video",
       {
         supportsBackgroundPlayback: true,
@@ -115,9 +124,10 @@ const config: ExpoConfig = {
     [
       "expo-build-properties",
       {
-        android: {
-          buildArchs: ["armeabi-v7a", "arm64-v8a"],
-          minSdkVersion: 24,
+    android: {
+      buildArchs: ["armeabi-v7a", "arm64-v8a"],
+      minSdkVersion: 24,
+      permissions: ["RECORD_AUDIO", "INTERNET"],
         },
       },
     ],
