@@ -58,3 +58,16 @@
 - [x] Update app.config.ts with branding
 - [x] Create splash screen
 - [x] Set theme colors in theme.config.js
+
+
+## Voice Features (NEW)
+- [x] Install expo-speech-recognition and expo-speech packages
+- [x] Create VoiceManager context for STT/TTS state
+- [x] Implement speech-to-text with 3-second silence detection
+- [x] Implement "Hey Jarvis" wake word detection
+- [x] Add American Southern female voice TTS
+- [x] Create voice control UI with play/pause/stop buttons
+- [x] Auto-play TTS responses
+- [x] Interrupt speaking when user starts talking
+- [x] Add voice status indicators to chat screen
+- [ ] Test voice features on device

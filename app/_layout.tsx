@@ -9,6 +9,7 @@ import { Platform } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { ChatProvider } from "@/lib/chat-context";
+import { VoiceProvider } from "@/lib/voice-manager";
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -102,13 +103,15 @@ export default function RootLayout() {
     return (
       <ThemeProvider>
         <ChatProvider>
-          <SafeAreaProvider initialMetrics={providerInitialMetrics}>
-            <SafeAreaFrameContext.Provider value={frame}>
-              <SafeAreaInsetsContext.Provider value={insets}>
-                {content}
-              </SafeAreaInsetsContext.Provider>
-            </SafeAreaFrameContext.Provider>
-          </SafeAreaProvider>
+          <VoiceProvider>
+            <SafeAreaProvider initialMetrics={providerInitialMetrics}>
+              <SafeAreaFrameContext.Provider value={frame}>
+                <SafeAreaInsetsContext.Provider value={insets}>
+                  {content}
+                </SafeAreaInsetsContext.Provider>
+              </SafeAreaFrameContext.Provider>
+            </SafeAreaProvider>
+          </VoiceProvider>
         </ChatProvider>
       </ThemeProvider>
     );
@@ -117,7 +120,9 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <ChatProvider>
-        <SafeAreaProvider initialMetrics={providerInitialMetrics}>{content}</SafeAreaProvider>
+        <VoiceProvider>
+          <SafeAreaProvider initialMetrics={providerInitialMetrics}>{content}</SafeAreaProvider>
+        </VoiceProvider>
       </ChatProvider>
     </ThemeProvider>
   );

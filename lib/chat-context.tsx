@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Speech from 'expo-speech';
 
 export interface Message {
   id: string;
@@ -113,15 +114,63 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       const offlineResponse = checkOfflineCommands(content);
       if (offlineResponse) {
         addMessage('assistant', offlineResponse, true);
-        setJarvisState('idle');
+        setJarvisState('speaking');
+        setIsSpeaking(true);
+        
+        // Auto-play TTS response
+        try {
+          await Speech.speak(offlineResponse, {
+            language: 'en-US',
+            pitch: 1.1,
+            rate: 0.85,
+            voice: 'com.apple.ttsbundle.Moira-compact',
+            onDone: () => {
+              setIsSpeaking(false);
+              setJarvisState('idle');
+            },
+            onError: () => {
+              setIsSpeaking(false);
+              setJarvisState('idle');
+            },
+          });
+        } catch (e) {
+          console.warn('TTS not available:', e);
+          setIsSpeaking(false);
+          setJarvisState('idle');
+        }
+        
         setIsLoading(false);
         return;
       }
 
       // Try to send to API
       if (!apiConfig.apiKey) {
-        addMessage('assistant', 'API key not configured. Please set up your API key in Settings.');
-        setJarvisState('idle');
+        const errorMsg = 'API key not configured. Please set up your API key in Settings.';
+        addMessage('assistant', errorMsg);
+        setJarvisState('speaking');
+        setIsSpeaking(true);
+        
+        try {
+          await Speech.speak(errorMsg, {
+            language: 'en-US',
+            pitch: 1.1,
+            rate: 0.85,
+            voice: 'com.apple.ttsbundle.Moira-compact',
+            onDone: () => {
+              setIsSpeaking(false);
+              setJarvisState('idle');
+            },
+            onError: () => {
+              setIsSpeaking(false);
+              setJarvisState('idle');
+            },
+          });
+        } catch (e) {
+          console.warn('TTS not available:', e);
+          setIsSpeaking(false);
+          setJarvisState('idle');
+        }
+        
         setIsLoading(false);
         return;
       }
@@ -151,14 +200,62 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
       const assistantMessage = data.choices[0]?.message?.content || 'No response received.';
       addMessage('assistant', assistantMessage);
+      
+      // Auto-play TTS response
+      setJarvisState('speaking');
+      setIsSpeaking(true);
+      
+      try {
+        await Speech.speak(assistantMessage, {
+          language: 'en-US',
+          pitch: 1.1,
+          rate: 0.85,
+          voice: 'com.apple.ttsbundle.Moira-compact',
+          onDone: () => {
+            setIsSpeaking(false);
+            setJarvisState('idle');
+          },
+          onError: () => {
+            setIsSpeaking(false);
+            setJarvisState('idle');
+          },
+        });
+      } catch (e) {
+        console.warn('TTS not available:', e);
+        setIsSpeaking(false);
+        setJarvisState('idle');
+      }
     } catch (error) {
       console.error('Failed to send message:', error);
-      addMessage('assistant', 'Sorry, I encountered an error. Please try again or check your API configuration.');
+      const errorMsg = 'Sorry, I encountered an error. Please try again or check your API configuration.';
+      addMessage('assistant', errorMsg);
+      setJarvisState('speaking');
+      setIsSpeaking(true);
+      
+      try {
+        await Speech.speak(errorMsg, {
+          language: 'en-US',
+          pitch: 1.1,
+          rate: 0.85,
+          voice: 'com.apple.ttsbundle.Moira-compact',
+          onDone: () => {
+            setIsSpeaking(false);
+            setJarvisState('idle');
+          },
+          onError: () => {
+            setIsSpeaking(false);
+            setJarvisState('idle');
+          },
+        });
+      } catch (e) {
+        console.warn('TTS not available:', e);
+        setIsSpeaking(false);
+        setJarvisState('idle');
+      }
     } finally {
-      setJarvisState('idle');
       setIsLoading(false);
     }
-  }, [messages, apiConfig, addMessage]);
+  }, [messages, apiConfig, addMessage]) as any;
 
   // Persist messages to storage whenever they change
   useEffect(() => {
