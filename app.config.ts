@@ -54,21 +54,20 @@ const config: ExpoConfig = {
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSMicrophoneUsageDescription": "Jarvis needs microphone access to listen to your voice commands.",
-        "NSSpeechRecognitionUsageDescription": "Jarvis needs speech recognition to understand your voice commands.",
-        "AVAudioDefaultToSpeaker": true
+        "NSSpeechRecognitionUsageDescription": "Jarvis needs speech recognition to understand your voice commands."
       }
   },
-  android: {
-    adaptiveIcon: {
-      backgroundColor: "#0f1419",
-      foregroundImage: "./assets/images/android-icon-foreground.png",
-      backgroundImage: "./assets/images/android-icon-background.png",
-      monochromeImage: "./assets/images/android-icon-monochrome.png",
-    },
-    edgeToEdgeEnabled: true,
-    predictiveBackGestureEnabled: false,
-    package: env.androidPackage,
-      permissions: ["POST_NOTIFICATIONS", "RECORD_AUDIO", "INTERNET", "MODIFY_AUDIO_SETTINGS"],
+    android: {
+      adaptiveIcon: {
+        backgroundColor: "#0f1419",
+        foregroundImage: "./assets/images/android-icon-foreground.png",
+        backgroundImage: "./assets/images/android-icon-background.png",
+        monochromeImage: "./assets/images/android-icon-monochrome.png",
+      },
+      edgeToEdgeEnabled: true,
+      predictiveBackGestureEnabled: false,
+      package: env.androidPackage,
+      permissions: ["POST_NOTIFICATIONS", "RECORD_AUDIO", "INTERNET"],
     intentFilters: [
       {
         action: "VIEW",
@@ -96,7 +95,6 @@ const config: ExpoConfig = {
         microphonePermission: "Allow $(PRODUCT_NAME) to access your microphone.",
       },
     ],
-    "expo-speech-recognition",
     [
       "expo-video",
       {
@@ -119,10 +117,9 @@ const config: ExpoConfig = {
     [
       "expo-build-properties",
       {
-    android: {
-      buildArchs: ["armeabi-v7a", "arm64-v8a"],
-      minSdkVersion: 24,
-      permissions: ["RECORD_AUDIO", "INTERNET"],
+        android: {
+          buildArchs: ["armeabi-v7a", "arm64-v8a"],
+          minSdkVersion: 24,
         },
       },
     ],
