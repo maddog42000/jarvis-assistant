@@ -51,23 +51,21 @@ const config: ExpoConfig = {
   ios: {
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "NSMicrophoneUsageDescription": "Jarvis needs microphone access to listen to your voice commands.",
-        "NSSpeechRecognitionUsageDescription": "Jarvis needs speech recognition to understand your voice commands."
+    "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
       }
   },
-    android: {
-      adaptiveIcon: {
-        backgroundColor: "#0f1419",
-        foregroundImage: "./assets/images/android-icon-foreground.png",
-        backgroundImage: "./assets/images/android-icon-background.png",
-        monochromeImage: "./assets/images/android-icon-monochrome.png",
-      },
-      edgeToEdgeEnabled: true,
-      predictiveBackGestureEnabled: false,
-      package: env.androidPackage,
-      permissions: ["POST_NOTIFICATIONS", "RECORD_AUDIO", "INTERNET"],
+  android: {
+    adaptiveIcon: {
+      backgroundColor: "#0f1419",
+      foregroundImage: "./assets/images/android-icon-foreground.png",
+      backgroundImage: "./assets/images/android-icon-background.png",
+      monochromeImage: "./assets/images/android-icon-monochrome.png",
+    },
+    edgeToEdgeEnabled: true,
+    predictiveBackGestureEnabled: false,
+    package: env.androidPackage,
+    permissions: ["POST_NOTIFICATIONS"],
     intentFilters: [
       {
         action: "VIEW",

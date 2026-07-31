@@ -12,9 +12,7 @@ import {
 import { ScreenContainer } from '@/components/screen-container';
 import { JarvisAvatar } from '@/components/jarvis-avatar';
 import { ChatMessage } from '@/components/chat-message';
-import { VoiceControls } from '@/components/voice-controls';
 import { useChat } from '@/lib/chat-context';
-import { useVoice } from '@/lib/voice-manager';
 import * as Haptics from 'expo-haptics';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -27,24 +25,8 @@ export default function ChatScreen() {
     addMessage,
   } = useChat();
 
-  const { transcript, startListening, stopListening, isListening } = useVoice();
-
   const [inputText, setInputText] = useState('');
   const flatListRef = useRef<FlatList>(null);
-
-  // Auto-submit when voice transcript is ready
-  useEffect(() => {
-    if (transcript && !isListening) {
-      setInputText(transcript);
-      // Auto-send after a short delay
-      setTimeout(() => {
-        if (transcript) {
-          sendMessage(transcript);
-          setInputText('');
-        }
-      }, 500);
-    }
-  }, [transcript, isListening, sendMessage]) as any;
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -71,14 +53,10 @@ export default function ChatScreen() {
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch (e) {
-      // Haptics not available on web
+      // Haptics not available
     }
-    
-    if (isListening) {
-      await stopListening();
-    } else {
-      await startListening();
-    }
+    // Voice input would be implemented with expo-speech-recognition
+    addMessage('user', '[Voice input would be recorded here]');
   };
 
   const handleQuickAction = async (action: string) => {
@@ -163,11 +141,6 @@ export default function ChatScreen() {
           )}
         </View>
 
-        {/* Voice Controls */}
-        <View className="bg-surface border-t border-border px-4 py-3">
-          <VoiceControls />
-        </View>
-
         {/* Input area */}
         <View className="bg-surface border-t border-border px-4 py-4 gap-3">
           {/* Quick action buttons */}
@@ -218,11 +191,9 @@ export default function ChatScreen() {
               style={({ pressed }) => [
                 { opacity: pressed ? 0.7 : 1 },
               ]}
-              className={`rounded-full p-3 justify-center items-center ${
-                isListening ? 'bg-error' : 'bg-primary'
-              }`}
+              className="bg-primary rounded-full p-3 justify-center items-center"
             >
-              <MaterialIcons name={isListening ? 'mic' : 'mic-none'} size={20} color="white" />
+              <MaterialIcons name="mic" size={20} color="white" />
             </Pressable>
 
             <TextInput
