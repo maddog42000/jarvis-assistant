@@ -74,10 +74,15 @@ export default function ChatScreen() {
       className="flex-1 bg-background"
     >
       <ScreenContainer className="flex-1 justify-between p-0">
-        {/* Header */}
-        <View className="bg-surface border-b border-border px-4 py-4">
-          <Text className="text-2xl font-bold text-foreground">Jarvis</Text>
-          <Text className="text-xs text-muted mt-1">AI Assistant</Text>
+        {/* Header with gradient effect */}
+        <View className="bg-gradient-to-r from-primary/10 to-primary/5 border-b border-primary/20 px-4 py-4 flex-row items-center gap-3">
+          <View className="w-10 h-10 rounded-full bg-primary/20 items-center justify-center">
+            <MaterialIcons name="smart-toy" size={20} color="#0a7ea4" />
+          </View>
+          <View>
+            <Text className="text-2xl font-bold text-foreground">Jarvis</Text>
+            <Text className="text-xs text-muted mt-0.5">AI Assistant</Text>
+          </View>
         </View>
 
         {/* Messages and Avatar */}
@@ -102,8 +107,9 @@ export default function ChatScreen() {
                   style={({ pressed }) => [
                     { opacity: pressed ? 0.7 : 1 },
                   ]}
-                  className="bg-primary rounded-lg px-4 py-3"
+                  className="bg-primary rounded-lg px-4 py-3 flex-row items-center justify-center gap-2"
                 >
+                  <MaterialIcons name="info" size={18} color="white" />
                   <Text className="text-white text-center font-semibold">
                     What can you do?
                   </Text>
@@ -113,10 +119,23 @@ export default function ChatScreen() {
                   style={({ pressed }) => [
                     { opacity: pressed ? 0.7 : 1 },
                   ]}
-                  className="bg-surface border border-border rounded-lg px-4 py-3"
+                  className="bg-surface border border-primary/30 rounded-lg px-4 py-3 flex-row items-center justify-center gap-2"
                 >
+                  <MaterialIcons name="dashboard" size={18} color="#0a7ea4" />
                   <Text className="text-foreground text-center font-semibold">
                     Status Report
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => handleQuickAction('help')}
+                  style={({ pressed }) => [
+                    { opacity: pressed ? 0.7 : 1 },
+                  ]}
+                  className="bg-surface border border-primary/30 rounded-lg px-4 py-3 flex-row items-center justify-center gap-2"
+                >
+                  <MaterialIcons name="help" size={18} color="#0a7ea4" />
+                  <Text className="text-foreground text-center font-semibold">
+                    Show Commands
                   </Text>
                 </Pressable>
               </View>
@@ -155,10 +174,10 @@ export default function ChatScreen() {
               style={({ pressed }) => [
                 { opacity: pressed ? 0.7 : 1 },
               ]}
-              className="bg-surface border border-border rounded-full px-3 py-2 flex-row items-center gap-2"
+              className="bg-primary/10 border border-primary/30 rounded-full px-3 py-2 flex-row items-center gap-2"
             >
-              <MaterialIcons name="schedule" size={14} color="#8a92a0" />
-              <Text className="text-xs text-muted">Time</Text>
+              <MaterialIcons name="schedule" size={14} color="#0a7ea4" />
+              <Text className="text-xs text-primary font-semibold">Time</Text>
             </Pressable>
 
             <Pressable
@@ -166,10 +185,10 @@ export default function ChatScreen() {
               style={({ pressed }) => [
                 { opacity: pressed ? 0.7 : 1 },
               ]}
-              className="bg-surface border border-border rounded-full px-3 py-2 flex-row items-center gap-2"
+              className="bg-success/10 border border-success/30 rounded-full px-3 py-2 flex-row items-center gap-2"
             >
-              <MaterialIcons name="battery-full" size={14} color="#8a92a0" />
-              <Text className="text-xs text-muted">Battery</Text>
+              <MaterialIcons name="battery-full" size={14} color="#22C55E" />
+              <Text className="text-xs text-success font-semibold">Battery</Text>
             </Pressable>
 
             <Pressable
@@ -177,10 +196,21 @@ export default function ChatScreen() {
               style={({ pressed }) => [
                 { opacity: pressed ? 0.7 : 1 },
               ]}
-              className="bg-surface border border-border rounded-full px-3 py-2 flex-row items-center gap-2"
+              className="bg-warning/10 border border-warning/30 rounded-full px-3 py-2 flex-row items-center gap-2"
             >
-              <MaterialIcons name="signal-cellular-alt" size={14} color="#8a92a0" />
-              <Text className="text-xs text-muted">Network</Text>
+              <MaterialIcons name="signal-cellular-alt" size={14} color="#F59E0B" />
+              <Text className="text-xs text-warning font-semibold">Network</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => handleQuickAction('Jarvis, status report')}
+              style={({ pressed }) => [
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+              className="bg-primary/10 border border-primary/30 rounded-full px-3 py-2 flex-row items-center gap-2"
+            >
+              <MaterialIcons name="dashboard" size={14} color="#0a7ea4" />
+              <Text className="text-xs text-primary font-semibold">Status</Text>
             </Pressable>
           </ScrollView>
 
@@ -191,9 +221,9 @@ export default function ChatScreen() {
               style={({ pressed }) => [
                 { opacity: pressed ? 0.7 : 1 },
               ]}
-              className="bg-primary rounded-full p-3 justify-center items-center"
+              className="bg-primary/20 border border-primary rounded-full p-3 justify-center items-center"
             >
-              <MaterialIcons name="mic" size={20} color="white" />
+              <MaterialIcons name="mic" size={20} color="#0a7ea4" />
             </Pressable>
 
             <TextInput
