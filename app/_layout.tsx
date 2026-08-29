@@ -9,6 +9,8 @@ import { Platform } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
 import { ChatProvider } from "@/lib/chat-context";
+import { OnboardingProvider } from "@/lib/onboarding-context";
+import { TtsProvider } from "@/lib/tts-context";
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -88,6 +90,7 @@ export default function RootLayout() {
           {/* in order for ios apps tab switching to work properly, use presentation: "fullScreenModal" for login page, whenever you decide to use presentation: "modal*/}
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="onboarding" />
             <Stack.Screen name="oauth/callback" />
           </Stack>
           <StatusBar style="auto" />
@@ -101,24 +104,32 @@ export default function RootLayout() {
   if (shouldOverrideSafeArea) {
     return (
       <ThemeProvider>
-        <ChatProvider>
-          <SafeAreaProvider initialMetrics={providerInitialMetrics}>
+        <OnboardingProvider>
+          <TtsProvider>
+            <ChatProvider>
+              <SafeAreaProvider initialMetrics={providerInitialMetrics}>
             <SafeAreaFrameContext.Provider value={frame}>
               <SafeAreaInsetsContext.Provider value={insets}>
                 {content}
               </SafeAreaInsetsContext.Provider>
             </SafeAreaFrameContext.Provider>
-          </SafeAreaProvider>
-        </ChatProvider>
+              </SafeAreaProvider>
+            </ChatProvider>
+          </TtsProvider>
+        </OnboardingProvider>
       </ThemeProvider>
     );
   }
 
   return (
     <ThemeProvider>
-      <ChatProvider>
-        <SafeAreaProvider initialMetrics={providerInitialMetrics}>{content}</SafeAreaProvider>
-      </ChatProvider>
+      <OnboardingProvider>
+        <TtsProvider>
+          <ChatProvider>
+            <SafeAreaProvider initialMetrics={providerInitialMetrics}>{content}</SafeAreaProvider>
+          </ChatProvider>
+        </TtsProvider>
+      </OnboardingProvider>
     </ThemeProvider>
   );
 }

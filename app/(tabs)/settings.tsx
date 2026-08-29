@@ -1,384 +1,167 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  Pressable,
-  Alert,
-  Linking,
-} from 'react-native';
-import { ScreenContainer } from '@/components/screen-container';
-import { useChat } from '@/lib/chat-context';
+import React, { useEffect, useState } from 'react';
+import { Alert, Linking, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
 
+import { ScreenContainer } from '@/components/screen-container';
+import { PRESET_COMMANDS } from '@/components/voice-and-command-widgets';
+import { useChat } from '@/lib/chat-context';
+import { useOnboarding } from '@/lib/onboarding-context';
+
 export default function SettingsScreen() {
-  const { apiConfig, updateApiConfig, clearMessages, hasApiKey } = useChat();
-
-  const [endpoint, setEndpoint] = useState(apiConfig.endpoint);
+  const { apiConfig, hasApiKey, updateApiConfig, clearMessages } = useChat();
+  const { resetOnboarding } = useOnboarding();
   const [apiKey, setApiKey] = useState(apiConfig.apiKey);
+  const [endpoint, setEndpoint] = useState(apiConfig.endpoint);
   const [model, setModel] = useState(apiConfig.model);
-  const [showApiKey, setShowApiKey] = useState(false);
+  const [showKey, setShowKey] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [expandedSection, setExpandedSection] = useState<string | null>('api');
 
-  const handleSave = async () => {
+  useEffect(() => {
+    setApiKey(apiConfig.apiKey);
+    setEndpoint(apiConfig.endpoint);
+    setModel(apiConfig.model);
+  }, [apiConfig.apiKey, apiConfig.endpoint, apiConfig.model]);
+
+  const saveConnection = async () => {
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch (e) {
-      // Haptics not available
+    } catch {
+      // Haptics are optional.
     }
-
-    await updateApiConfig({
-      endpoint,
-      apiKey,
-      model,
-    });
-
+    await updateApiConfig({ apiKey: apiKey.trim(), endpoint: endpoint.trim(), model: model.trim() });
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setTimeout(() => setSaved(false), 1800);
   };
 
-  const handleClearHistory = () => {
-    Alert.alert(
-      'Clear Chat History',
-      'Are you sure you want to delete all conversations? This cannot be undone.',
-      [
-        { text: 'Cancel', onPress: () => {} },
-        {
-          text: 'Clear',
-          onPress: async () => {
-            await clearMessages();
-            Alert.alert('Success', 'Chat history cleared.');
-          },
-          style: 'destructive',
-        },
-      ]
-    );
+  const confirmReset = () => {
+    Alert.alert('Restart onboarding?', 'The walkthrough will appear the next time you open Jarvis.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Restart', style: 'destructive', onPress: () => { void resetOnboarding(); router.replace('/onboarding' as any); } },
+    ]);
   };
 
-  const openLink = (url: string) => {
-    Linking.openURL(url).catch(err => console.error('Failed to open URL:', err));
+  const confirmClear = () => {
+    Alert.alert('Clear chat history?', 'This removes every saved conversation from this device.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Clear history', style: 'destructive', onPress: () => void clearMessages() },
+    ]);
   };
 
   return (
     <ScreenContainer className="flex-1 bg-background">
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 16 }}>
-        {/* Header */}
-        <Text className="text-3xl font-bold text-foreground mb-2">Settings</Text>
-        <Text className="text-sm text-muted mb-8">Configure Jarvis and manage preferences</Text>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+        <Text className="text-3xl font-bold text-foreground">Settings</Text>
+        <Text className="text-sm text-muted mt-1 mb-6">Simple controls for how Jarvis connects and speaks.</Text>
 
-        {/* API Status Banner */}
-        <View className={`rounded-lg p-4 mb-6 flex-row items-center gap-3 ${hasApiKey ? 'bg-success/10 border border-success' : 'bg-warning/10 border border-warning'}`}>
-          <MaterialIcons 
-            name={hasApiKey ? "check-circle" : "info"} 
-            size={24} 
-            color={hasApiKey ? "#22C55E" : "#F59E0B"} 
-          />
+        <View className={`rounded-2xl border p-4 mb-5 flex-row items-center gap-3 ${hasApiKey ? 'bg-success/10 border-success/30' : 'bg-warning/10 border-warning/30'}`}>
+          <MaterialIcons name={hasApiKey ? 'check-circle' : 'offline-bolt'} size={25} color={hasApiKey ? '#49d17d' : '#f5b942'} />
           <View className="flex-1">
-            <Text className={`font-semibold ${hasApiKey ? 'text-success' : 'text-warning'}`}>
-              {hasApiKey ? 'API Connected' : 'No API Key'}
-            </Text>
-            <Text className="text-xs text-muted mt-1">
-              {hasApiKey ? 'Full AI features enabled' : 'Using offline commands only'}
-            </Text>
+            <Text className="font-semibold text-foreground">{hasApiKey ? 'AI connection ready' : 'Offline mode active'}</Text>
+            <Text className="text-xs text-muted mt-1">{hasApiKey ? 'Jarvis can use your selected provider.' : 'Preset commands work without a key.'}</Text>
           </View>
         </View>
 
-        {/* API Configuration Section */}
-        <ExpandableSection
-          title="🔑 API Configuration"
-          subtitle="Set up your AI provider"
-          isExpanded={expandedSection === 'api'}
-          onPress={() => setExpandedSection(expandedSection === 'api' ? null : 'api')}
-        >
-          <View className="gap-4">
-            {/* Quick Setup Guide */}
-            <View className="bg-background border border-border rounded-lg p-3">
-              <Text className="text-xs font-semibold text-primary mb-2">📚 Quick Setup Guide</Text>
-              <Text className="text-xs text-muted leading-relaxed mb-2">
-                1. Get an API key from OpenAI (openai.com/api)\n
-                2. Paste it below\n
-                3. Use default endpoint or enter custom\n
-                4. Click Save
-              </Text>
-              <Pressable
-                onPress={() => openLink('https://platform.openai.com/api-keys')}
-                className="flex-row items-center gap-2"
-              >
-                <MaterialIcons name="open-in-new" size={14} color="#0a7ea4" />
-                <Text className="text-xs text-primary font-semibold">Get API Key</Text>
-              </Pressable>
-            </View>
-
-            {/* API Key */}
-            <View>
-              <View className="flex-row justify-between items-center mb-2">
-                <Text className="text-sm font-semibold text-foreground">API Key *</Text>
-                <Pressable
-                  onPress={() => setShowApiKey(!showApiKey)}
-                  style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
-                >
-                  <MaterialIcons
-                    name={showApiKey ? 'visibility' : 'visibility-off'}
-                    size={18}
-                    color="#8a92a0"
-                  />
-                </Pressable>
-              </View>
-              <TextInput
-                value={apiKey}
-                onChangeText={setApiKey}
-                placeholder="sk-... (required for AI features)"
-                placeholderTextColor="#8a92a0"
-                secureTextEntry={!showApiKey}
-                className="bg-surface border border-border rounded-lg px-4 py-3 text-foreground"
-              />
-              <Text className="text-xs text-muted mt-1">
-                ✓ Stored locally • Never shared • Encrypted
-              </Text>
-            </View>
-
-            {/* Endpoint */}
-            <View>
-              <Text className="text-sm font-semibold text-foreground mb-2">API Endpoint</Text>
-              <TextInput
-                value={endpoint}
-                onChangeText={setEndpoint}
-                placeholder="https://api.openai.com/v1"
-                placeholderTextColor="#8a92a0"
-                className="bg-surface border border-border rounded-lg px-4 py-3 text-foreground"
-              />
-              <Text className="text-xs text-muted mt-1">
-                OpenAI or compatible API endpoint
-              </Text>
-            </View>
-
-            {/* Model */}
-            <View>
-              <Text className="text-sm font-semibold text-foreground mb-2">Model</Text>
-              <TextInput
-                value={model}
-                onChangeText={setModel}
-                placeholder="gpt-3.5-turbo"
-                placeholderTextColor="#8a92a0"
-                className="bg-surface border border-border rounded-lg px-4 py-3 text-foreground"
-              />
-              <Text className="text-xs text-muted mt-1">
-                gpt-3.5-turbo, gpt-4, or other compatible model
-              </Text>
-            </View>
-
-            {/* Save button */}
-            <Pressable
-              onPress={handleSave}
-              style={({ pressed }) => [
-                { opacity: pressed ? 0.7 : 1 },
-              ]}
-              className="bg-primary rounded-lg px-4 py-3 flex-row items-center justify-center gap-2"
-            >
-              <MaterialIcons name="save" size={18} color="white" />
-              <Text className="text-white font-semibold">
-                {saved ? '✓ Saved!' : 'Save Configuration'}
-              </Text>
+        <SectionTitle icon="key" title="AI connection" subtitle="Optional — leave blank to stay offline" />
+        <View className="bg-surface border border-border rounded-2xl p-4 gap-4">
+          <View className="bg-background border border-border rounded-xl p-3">
+            <Text className="text-sm font-semibold text-foreground">How to connect</Text>
+            <Text className="text-xs text-muted leading-relaxed mt-1">Open the provider page, create a secret key, copy it, paste it below, then tap Save connection.</Text>
+            <Pressable onPress={() => void Linking.openURL('https://platform.openai.com/api-keys')} className="flex-row items-center gap-2 mt-3">
+              <MaterialIcons name="open-in-new" size={15} color="#18d5ff" />
+              <Text className="text-xs font-semibold text-primary">Open provider key page</Text>
             </Pressable>
           </View>
-        </ExpandableSection>
 
-        {/* Offline Commands Section */}
-        <ExpandableSection
-          title="⚡ Offline Commands"
-          subtitle="20+ commands that work without API"
-          isExpanded={expandedSection === 'commands'}
-          onPress={() => setExpandedSection(expandedSection === 'commands' ? null : 'commands')}
-        >
-          <View className="bg-surface border border-border rounded-lg overflow-hidden">
-            <CommandGrid />
+          <FieldLabel label="API key" />
+          <View className="flex-row items-center bg-background border border-border rounded-xl px-4">
+            <TextInput
+              value={apiKey}
+              onChangeText={setApiKey}
+              placeholder="sk-..."
+              placeholderTextColor="#77808c"
+              secureTextEntry={!showKey}
+              autoCapitalize="none"
+              autoCorrect={false}
+              className="flex-1 py-4 text-foreground"
+            />
+            <Pressable onPress={() => setShowKey((value) => !value)} hitSlop={12}>
+              <MaterialIcons name={showKey ? 'visibility' : 'visibility-off'} size={20} color="#8a92a0" />
+            </Pressable>
           </View>
-        </ExpandableSection>
+          <Text className="text-xs text-muted -mt-2">Stored locally on this device. Never embed a key in the app.</Text>
 
-        {/* Fallback Options Section */}
-        <ExpandableSection
-          title="🌐 No API Key? Try These"
-          subtitle="Alternative AI options"
-          isExpanded={expandedSection === 'fallback'}
-          onPress={() => setExpandedSection(expandedSection === 'fallback' ? null : 'fallback')}
-        >
-          <View className="gap-3">
-            <FallbackOption
-              icon="assistant"
-              title="Google Assistant"
-              description="Use your device's built-in Google Assistant"
-              action={() => Alert.alert('Google Assistant', 'Activate Google Assistant on your device')}
-            />
-            <FallbackOption
-              icon="mic"
-              title="Siri / Voice Assistant"
-              description="Use your device's native voice assistant"
-              action={() => Alert.alert('Voice Assistant', 'Activate Siri or your device assistant')}
-            />
-            <FallbackOption
-              icon="language"
-              title="Google AI in Browser"
-              description="Open Chrome and use Google's AI mode"
-              action={() => openLink('https://google.com')}
-            />
-            <FallbackOption
-              icon="chat"
-              title="ChatGPT Web"
-              description="Visit ChatGPT directly in your browser"
-              action={() => openLink('https://chat.openai.com')}
-            />
-          </View>
-        </ExpandableSection>
+          <FieldLabel label="Endpoint" />
+          <TextInput value={endpoint} onChangeText={setEndpoint} placeholder="https://api.openai.com/v1" placeholderTextColor="#77808c" autoCapitalize="none" className="bg-background border border-border rounded-xl px-4 py-4 text-foreground" />
 
-        {/* About Section */}
-        <ExpandableSection
-          title="ℹ️ About Jarvis"
-          subtitle="App information"
-          isExpanded={expandedSection === 'about'}
-          onPress={() => setExpandedSection(expandedSection === 'about' ? null : 'about')}
-        >
-          <View className="bg-surface border border-border rounded-lg p-4 gap-3">
-            <InfoRow label="Version" value="1.0.5" />
-            <InfoRow label="Platform" value={require('react-native').Platform.OS === 'android' ? 'Android' : 'iOS'} />
-            <InfoRow label="Status" value="Active" />
-            <Text className="text-xs text-muted leading-relaxed mt-2">
-              Jarvis is a sophisticated AI assistant with voice control, offline capabilities, and beautiful animations. Developed with React Native & Expo.
-            </Text>
-          </View>
-        </ExpandableSection>
+          <FieldLabel label="Model" />
+          <TextInput value={model} onChangeText={setModel} placeholder="gpt-3.5-turbo" placeholderTextColor="#77808c" autoCapitalize="none" className="bg-background border border-border rounded-xl px-4 py-4 text-foreground" />
 
-        {/* Danger Zone */}
-        <View className="mt-8 mb-8">
-          <Text className="text-lg font-semibold text-error mb-3">⚠️ Danger Zone</Text>
-
-          <Pressable
-            onPress={handleClearHistory}
-            style={({ pressed }) => [
-              { opacity: pressed ? 0.7 : 1 },
-            ]}
-            className="bg-error/10 border border-error rounded-lg px-4 py-3 flex-row items-center justify-between"
-          >
-            <View className="flex-row items-center gap-3">
-              <MaterialIcons name="delete-outline" size={20} color="#ff4466" />
-              <Text className="text-error font-semibold">Clear All Chat History</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={20} color="#ff4466" />
+          <Pressable onPress={() => void saveConnection()} style={({ pressed }) => [{ opacity: pressed ? 0.75 : 1 }]} className="bg-primary rounded-xl py-4 flex-row items-center justify-center gap-2">
+            <MaterialIcons name={saved ? 'check' : 'save'} size={18} color="#061018" />
+            <Text className="font-bold text-background">{saved ? 'Connection saved' : 'Save connection'}</Text>
           </Pressable>
         </View>
+
+        <SectionTitle icon="bolt" title="Offline command deck" subtitle={`${PRESET_COMMANDS.length} commands available without an API key`} />
+        <View className="bg-surface border border-border rounded-2xl overflow-hidden">
+          {PRESET_COMMANDS.map((command, index) => (
+            <View key={command.label} className={`flex-row items-center gap-3 px-4 py-3 ${index < PRESET_COMMANDS.length - 1 ? 'border-b border-border' : ''}`}>
+              <View className="w-8 h-8 rounded-lg items-center justify-center" style={{ backgroundColor: `${command.color}22` }}>
+                <MaterialIcons name={command.icon} size={17} color={command.color} />
+              </View>
+              <View className="flex-1">
+                <Text className="text-sm font-semibold text-foreground">{command.label}</Text>
+                <Text className="text-xs text-muted mt-0.5">Say or type “{command.command}”</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <SectionTitle icon="volume-up" title="Voice playback" subtitle="Jarvis reads each response automatically" />
+        <View className="bg-surface border border-border rounded-2xl p-4 flex-row items-start gap-3">
+          <MaterialIcons name="record-voice-over" size={22} color="#18d5ff" />
+          <Text className="flex-1 text-sm text-muted leading-relaxed">Playback uses the installed English voice. On Android, the Expo speech API supports replay and stop; true pause, seek, and a custom accent require a different native audio engine.</Text>
+        </View>
+
+        <SectionTitle icon="tune" title="App preferences" subtitle="Walkthrough and local data" />
+        <View className="gap-3">
+          <ActionRow icon="school" title="Restart onboarding" description="Review setup instructions and API key guidance" onPress={confirmReset} />
+          <ActionRow icon="delete-outline" danger title="Clear chat history" description="Remove saved conversations from this device" onPress={confirmClear} />
+        </View>
+
+        <Text className="text-xs text-muted text-center mt-8">Jarvis v1.0.5 · {Platform.OS === 'android' ? 'Android' : 'iOS'} · Offline first</Text>
       </ScrollView>
     </ScreenContainer>
   );
 }
 
-function ExpandableSection({
-  title,
-  subtitle,
-  isExpanded,
-  onPress,
-  children,
-}: {
-  title: string;
-  subtitle: string;
-  isExpanded: boolean;
-  onPress: () => void;
-  children: React.ReactNode;
-}) {
+function SectionTitle({ icon, title, subtitle }: { icon: keyof typeof MaterialIcons.glyphMap; title: string; subtitle: string }) {
   return (
-    <View className="mb-4">
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
-        className="bg-surface border border-border rounded-lg p-4 flex-row items-center justify-between"
-      >
-        <View className="flex-1">
-          <Text className="text-lg font-semibold text-foreground">{title}</Text>
-          <Text className="text-xs text-muted mt-1">{subtitle}</Text>
-        </View>
-        <MaterialIcons
-          name={isExpanded ? 'expand-less' : 'expand-more'}
-          size={24}
-          color="#8a92a0"
-        />
-      </Pressable>
-      {isExpanded && (
-        <View className="mt-3 bg-background border border-border border-t-0 rounded-b-lg p-4">
-          {children}
-        </View>
-      )}
-    </View>
-  );
-}
-
-function CommandGrid() {
-  const commands = [
-    { emoji: '📊', name: 'Status Report', cmd: 'status report' },
-    { emoji: '⏰', name: 'Current Time', cmd: 'what time is it' },
-    { emoji: '📅', name: 'Today\'s Date', cmd: 'what date' },
-    { emoji: '🔋', name: 'Battery Status', cmd: 'battery check' },
-    { emoji: '📡', name: 'Network Info', cmd: 'network status' },
-    { emoji: '💾', name: 'Storage Info', cmd: 'storage' },
-    { emoji: '⏲️', name: 'Set Reminder', cmd: 'remind me' },
-    { emoji: '🔔', name: 'Set Alarm', cmd: 'set alarm' },
-    { emoji: '⏱️', name: 'Timer', cmd: 'timer' },
-    { emoji: '🗑️', name: 'Clear History', cmd: 'clear history' },
-    { emoji: '🕵️', name: 'Stealth Mode', cmd: 'stealth mode' },
-    { emoji: '👁️', name: 'Screen Analysis', cmd: 'eyes on' },
-    { emoji: '😄', name: 'Tell a Joke', cmd: 'joke' },
-    { emoji: '💡', name: 'Get Quote', cmd: 'quote' },
-    { emoji: '🧮', name: 'Calculate', cmd: 'calculate' },
-    { emoji: '🤖', name: 'Help', cmd: 'help' },
-  ];
-
-  return (
-    <View className="p-4">
-      <View className="flex-row flex-wrap gap-2">
-        {commands.map((cmd, idx) => (
-          <View key={idx} className="flex-1 min-w-[45%] bg-background border border-border rounded-lg p-2 items-center">
-            <Text className="text-2xl mb-1">{cmd.emoji}</Text>
-            <Text className="text-xs font-semibold text-foreground text-center">{cmd.name}</Text>
-            <Text className="text-xs text-muted text-center mt-1">{cmd.cmd}</Text>
-          </View>
-        ))}
+    <View className="flex-row items-center gap-3 mt-5 mb-3">
+      <MaterialIcons name={icon} size={20} color="#18d5ff" />
+      <View className="flex-1">
+        <Text className="text-lg font-bold text-foreground">{title}</Text>
+        <Text className="text-xs text-muted mt-0.5">{subtitle}</Text>
       </View>
     </View>
   );
 }
 
-function FallbackOption({
-  icon,
-  title,
-  description,
-  action,
-}: {
-  icon: string;
-  title: string;
-  description: string;
-  action: () => void;
-}) {
+function FieldLabel({ label }: { label: string }) {
+  return <Text className="text-sm font-semibold text-foreground -mb-2">{label}</Text>;
+}
+
+function ActionRow({ icon, title, description, danger = false, onPress }: { icon: keyof typeof MaterialIcons.glyphMap; title: string; description: string; danger?: boolean; onPress: () => void }) {
   return (
-    <Pressable
-      onPress={action}
-      style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
-      className="bg-surface border border-border rounded-lg p-4 flex-row items-center gap-3"
-    >
-      <MaterialIcons name={icon as any} size={24} color="#0a7ea4" />
+    <Pressable onPress={onPress} style={({ pressed }) => [{ opacity: pressed ? 0.75 : 1 }]} className={`bg-surface border rounded-2xl p-4 flex-row items-center gap-3 ${danger ? 'border-error/40' : 'border-border'}`}>
+      <MaterialIcons name={icon} size={22} color={danger ? '#ff6b78' : '#18d5ff'} />
       <View className="flex-1">
-        <Text className="text-sm font-semibold text-foreground">{title}</Text>
+        <Text className={`text-sm font-semibold ${danger ? 'text-error' : 'text-foreground'}`}>{title}</Text>
         <Text className="text-xs text-muted mt-1">{description}</Text>
       </View>
       <MaterialIcons name="chevron-right" size={20} color="#8a92a0" />
     </Pressable>
-  );
-}
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="flex-row justify-between items-center py-2 border-b border-border last:border-b-0">
-      <Text className="text-sm text-muted">{label}</Text>
-      <Text className="text-sm font-semibold text-foreground">{value}</Text>
-    </View>
   );
 }
