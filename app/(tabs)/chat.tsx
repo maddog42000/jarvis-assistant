@@ -22,7 +22,7 @@ import { useTts } from '@/lib/tts-context';
 
 export default function ChatScreen() {
   const { messages, isLoading, jarvisState, sendMessage } = useChat();
-  const { speak } = useTts();
+  const { speak, settings: ttsSettings } = useTts();
   const [inputText, setInputText] = useState('');
   const flatListRef = useRef<FlatList>(null);
   const lastSpokenIdRef = useRef<string | null>(null);
@@ -32,9 +32,9 @@ export default function ChatScreen() {
     const latest = messages[messages.length - 1];
     if (latest?.role === 'assistant' && latest.id !== lastSpokenIdRef.current) {
       lastSpokenIdRef.current = latest.id;
-      speak(latest.content);
+      if (ttsSettings.autoSpeak) speak(latest.content);
     }
-  }, [messages, speak]);
+  }, [messages, speak, ttsSettings.autoSpeak]);
 
   const handleSend = async () => {
     const text = inputText.trim();

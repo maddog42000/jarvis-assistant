@@ -1,6 +1,22 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Speech from 'expo-speech';
+
+export type TtsVoice = {
+  identifier: string;
+  language: string;
+  name: string;
+  quality?: string;
+};
+
+export type TtsSettings = {
+  voiceIdentifier: string;
+  language: string;
+  pitch: number;
+  rate: number;
+  autoSpeak: boolean;
+};
 
 interface TtsContextValue {
   isSpeaking: boolean;
@@ -8,13 +24,27 @@ interface TtsContextValue {
   currentText: string;
   progress: number;
   canPause: boolean;
+  voices: TtsVoice[];
+  settings: TtsSettings;
+  isLoadingVoices: boolean;
   speak: (text: string) => void;
   restart: () => void;
   pauseOrResume: () => Promise<void>;
   stop: () => Promise<void>;
+  updateSettings: (settings: Partial<TtsSettings>) => Promise<void>;
 }
 
 const TtsContext = createContext<TtsContextValue | undefined>(undefined);
+const TTS_SETTINGS_KEY = 'jarvis_tts_settings';
+const DEFAULT_SETTINGS: TtsSettings = {
+  voiceIdentifier: '',
+  language: 'en-US',
+  pitch: 1.06,
+  rate: 0.92,
+  autoSpeak: true,
+};
+
+const FEMALE_VOICE_HINTS = /female|woman|samantha|ava|victoria|karen|zira|jenny|aria|libby|moira|allison|susan|emma|google us english/i;
 
 function cleanForSpeech(text: string) {
   return text
@@ -24,11 +54,29 @@ function cleanForSpeech(text: string) {
     .slice(0, 3000);
 }
 
+function scoreVoice(voice: TtsVoice) {
+  const language = voice.language.toLowerCase();
+  const name = `${voice.name} ${voice.identifier}`;
+  let score = 0;
+  if (language.startsWith('en')) score += 20;
+  if (language === 'en-us' || language === 'en_us') score += 8;
+  if (FEMALE_VOICE_HINTS.test(name)) score += 12;
+  if (String(voice.quality).toLowerCase().includes('enhanced')) score += 3;
+  return score;
+}
+
+function sortVoices(voices: TtsVoice[]) {
+  return [...voices].sort((a, b) => scoreVoice(b) - scoreVoice(a) || a.name.localeCompare(b.name));
+}
+
 export function TtsProvider({ children }: { children: React.ReactNode }) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentText, setCurrentText] = useState('');
   const [progress, setProgress] = useState(0);
+  const [voices, setVoices] = useState<TtsVoice[]>([]);
+  const [settings, setSettings] = useState<TtsSettings>(DEFAULT_SETTINGS);
+  const [isLoadingVoices, setIsLoadingVoices] = useState(true);
   const activeTextRef = useRef('');
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -38,6 +86,49 @@ export function TtsProvider({ children }: { children: React.ReactNode }) {
       progressTimerRef.current = null;
     }
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadVoiceSettings = async () => {
+      try {
+        const [availableVoices, storedSettings] = await Promise.all([
+          Speech.getAvailableVoicesAsync(),
+          AsyncStorage.getItem(TTS_SETTINGS_KEY),
+        ]);
+        if (cancelled) return;
+        const sorted = sortVoices(availableVoices as TtsVoice[]);
+        setVoices(sorted);
+        const parsed = storedSettings ? JSON.parse(storedSettings) as Partial<TtsSettings> : {};
+        const storedVoice = parsed.voiceIdentifier && sorted.some((voice) => voice.identifier === parsed.voiceIdentifier)
+          ? parsed.voiceIdentifier
+          : sorted[0]?.identifier ?? '';
+        setSettings({
+          ...DEFAULT_SETTINGS,
+          ...parsed,
+          voiceIdentifier: storedVoice,
+          language: parsed.language || sorted.find((voice) => voice.identifier === storedVoice)?.language || 'en-US',
+        });
+      } catch (error) {
+        if (!cancelled) console.warn('Unable to load Android TTS voices:', error);
+      } finally {
+        if (!cancelled) setIsLoadingVoices(false);
+      }
+    };
+    void loadVoiceSettings();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const updateSettings = useCallback(async (nextSettings: Partial<TtsSettings>) => {
+    const updated = { ...settings, ...nextSettings };
+    setSettings(updated);
+    try {
+      await AsyncStorage.setItem(TTS_SETTINGS_KEY, JSON.stringify(updated));
+    } catch (error) {
+      console.warn('Unable to save TTS settings:', error);
+    }
+  }, [settings]);
 
   const stop = useCallback(async () => {
     clearProgressTimer();
@@ -66,16 +157,16 @@ export function TtsProvider({ children }: { children: React.ReactNode }) {
     const wordCount = Math.max(spokenText.split(/\s+/).length, 1);
     const estimatedDuration = Math.max(wordCount * 360, 1600);
     const startedAt = Date.now();
-
     progressTimerRef.current = setInterval(() => {
       const nextProgress = Math.min((Date.now() - startedAt) / estimatedDuration, 0.98);
       setProgress(nextProgress);
     }, 120);
 
     Speech.speak(spokenText, {
-      language: 'en-US',
-      pitch: 1.08,
-      rate: 0.9,
+      language: settings.language || 'en-US',
+      voice: settings.voiceIdentifier || undefined,
+      pitch: settings.pitch,
+      rate: settings.rate,
       volume: 1,
       onDone: () => {
         clearProgressTimer();
@@ -94,7 +185,7 @@ export function TtsProvider({ children }: { children: React.ReactNode }) {
         setIsPaused(false);
       },
     });
-  }, [clearProgressTimer]);
+  }, [clearProgressTimer, settings]);
 
   const restart = useCallback(() => {
     if (activeTextRef.current) speak(activeTextRef.current);
@@ -102,8 +193,6 @@ export function TtsProvider({ children }: { children: React.ReactNode }) {
 
   const pauseOrResume = useCallback(async () => {
     if (Platform.OS === 'android') {
-      // Android's Expo TTS API does not expose pause/resume. Stop now and let
-      // the Play button restart the current response from the beginning.
       await stop();
       return;
     }
@@ -133,10 +222,14 @@ export function TtsProvider({ children }: { children: React.ReactNode }) {
         currentText,
         progress,
         canPause: Platform.OS !== 'android',
+        voices,
+        settings,
+        isLoadingVoices,
         speak,
         restart,
         pauseOrResume,
         stop,
+        updateSettings,
       }}
     >
       {children}

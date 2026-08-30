@@ -76,3 +76,20 @@
 - The safe build does not include a native speech-recognition module or continuous wake-word service; Android keyboard dictation remains the current voice-input fallback.
 - System overlays and Android accessibility services are outside the supported Expo app scope.
 - API keys are user-entered and stored locally; no provider secret is embedded in the app.
+
+
+## TTS and Provider Connectivity Upgrade
+- [x] Add selectable Android TTS voice preferences with female-voice and accent guidance
+- [x] Persist TTS voice, pitch, and speaking-rate settings locally
+- [x] Add provider presets for OpenAI-compatible, Google Gemini, and Anthropic-compatible endpoints
+- [x] Add explicit agent profiles with provider, model, and system prompt
+- [x] Make API key storage and selection unambiguous per provider/agent
+- [x] Add connection test with safe, non-secret success/error feedback
+- [x] Route chat requests through the selected provider and agent
+- [x] Preserve offline command fallback when no provider is configured
+- [x] Run typecheck, lint, and preview verification
+- [ ] Save a checkpoint for the TTS/provider connectivity upgrade
+
+## Platform Notes
+- [x] Explain that exact accent and female voice availability depend on Android's installed TTS engine and language packs
+- [x] Explain that API keys remain local and are never bundled into the app

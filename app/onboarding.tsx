@@ -6,19 +6,21 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { ScreenContainer } from '@/components/screen-container';
 import { useChat } from '@/lib/chat-context';
 import { useOnboarding } from '@/lib/onboarding-context';
+import { getProvider, PROVIDERS, type ProviderId } from '@/lib/assistant-config';
 
 const TOTAL_STEPS = 4;
 
 export default function OnboardingScreen() {
   const { currentStep, setCurrentStep, completeOnboarding } = useOnboarding();
   const { updateApiConfig } = useChat();
+  const [providerId, setProviderId] = useState<ProviderId>('openai');
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const finish = async () => {
     if (apiKey.trim()) {
-      await updateApiConfig({ apiKey: apiKey.trim() });
+      await updateApiConfig({ providerId, apiKey: apiKey.trim(), apiKeys: { [providerId]: apiKey.trim() } });
       setSaved(true);
     }
     await completeOnboarding();
@@ -71,6 +73,15 @@ export default function OnboardingScreen() {
               <ModeCard icon="offline-bolt" title="Offline first" description="Time, date, battery, network, jokes, quotes, help, and more." active />
               <ModeCard icon="cloud-queue" title="Optional AI connection" description="Add your own provider key later for general questions and creative work." />
             </View>
+            <Text className="text-sm font-semibold text-foreground mt-7 mb-2">Choose a provider now or later</Text>
+            <View className="gap-2">
+              {PROVIDERS.slice(0, 3).map((provider) => (
+                <Pressable key={provider.id} onPress={() => setProviderId(provider.id)} style={({ pressed }) => [{ opacity: pressed ? 0.78 : 1 }]} className={`rounded-xl border p-3 flex-row items-center gap-3 ${providerId === provider.id ? 'border-primary bg-primary/10' : 'border-border bg-surface'}`}>
+                  <MaterialIcons name={providerId === provider.id ? 'radio-button-checked' : 'radio-button-unchecked'} size={20} color={providerId === provider.id ? '#18d5ff' : '#77808c'} />
+                  <View className="flex-1"><Text className="text-sm font-semibold text-foreground">{provider.name}</Text><Text className="text-xs text-muted mt-1">{provider.description}</Text></View>
+                </Pressable>
+              ))}
+            </View>
             <View className="bg-warning/10 border border-warning/30 rounded-xl p-4 mt-6 flex-row gap-3">
               <MaterialIcons name="info-outline" size={20} color="#f5b942" />
               <Text className="flex-1 text-sm text-muted leading-relaxed">
@@ -84,17 +95,17 @@ export default function OnboardingScreen() {
           <View className="flex-1 justify-center">
             <Text className="text-3xl font-bold text-foreground">Add an API key</Text>
             <Text className="text-base text-muted leading-relaxed mt-3">
-              This step is optional. Open the provider page, create a secret key, copy it, and paste it below.
+              This step is optional. You selected {getProvider(providerId).name}. Open its official key page, create a key, copy it, and paste it below.
             </Text>
             <Pressable
-              onPress={() => void Linking.openURL('https://platform.openai.com/api-keys')}
+              onPress={() => void Linking.openURL(getProvider(providerId).keyUrl)}
               style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
               className="bg-primary/10 border border-primary/30 rounded-xl p-4 mt-6 flex-row items-center gap-3"
             >
               <MaterialIcons name="open-in-new" size={22} color="#18d5ff" />
               <View className="flex-1">
-                <Text className="font-semibold text-foreground">Open provider key page</Text>
-                <Text className="text-xs text-muted mt-1">platform.openai.com/api-keys</Text>
+              <Text className="font-semibold text-foreground">Open {getProvider(providerId).name} key page</Text>
+              <Text className="text-xs text-muted mt-1">{getProvider(providerId).keyUrl.replace(/^https?:\/\//, '')}</Text>
               </View>
               <MaterialIcons name="chevron-right" size={20} color="#8a92a0" />
             </Pressable>
@@ -103,7 +114,7 @@ export default function OnboardingScreen() {
               <TextInput
                 value={apiKey}
                 onChangeText={setApiKey}
-                placeholder="sk-..."
+                placeholder={getProvider(providerId).keyHint}
                 placeholderTextColor="#77808c"
                 secureTextEntry={!showKey}
                 autoCapitalize="none"
@@ -114,7 +125,7 @@ export default function OnboardingScreen() {
                 <MaterialIcons name={showKey ? 'visibility' : 'visibility-off'} size={20} color="#8a92a0" />
               </Pressable>
             </View>
-            <Text className="text-xs text-muted mt-2">Stored locally. You can skip this and use offline mode.</Text>
+            <Text className="text-xs text-muted mt-2">Stored locally for {getProvider(providerId).name}. You can skip this and use offline mode.</Text>
           </View>
         )}
 
