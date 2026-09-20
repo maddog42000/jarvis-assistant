@@ -11,6 +11,7 @@ import { ThemeProvider } from "@/lib/theme-provider";
 import { ChatProvider } from "@/lib/chat-context";
 import { OnboardingProvider } from "@/lib/onboarding-context";
 import { TtsProvider } from "@/lib/tts-context";
+import { MemoryProvider } from "@/lib/memory-context";
 import {
   SafeAreaFrameContext,
   SafeAreaInsetsContext,
@@ -106,7 +107,8 @@ export default function RootLayout() {
       <ThemeProvider>
         <OnboardingProvider>
           <TtsProvider>
-            <ChatProvider>
+            <MemoryProvider>
+              <ChatProvider>
               <SafeAreaProvider initialMetrics={providerInitialMetrics}>
             <SafeAreaFrameContext.Provider value={frame}>
               <SafeAreaInsetsContext.Provider value={insets}>
@@ -114,7 +116,8 @@ export default function RootLayout() {
               </SafeAreaInsetsContext.Provider>
             </SafeAreaFrameContext.Provider>
               </SafeAreaProvider>
-            </ChatProvider>
+              </ChatProvider>
+            </MemoryProvider>
           </TtsProvider>
         </OnboardingProvider>
       </ThemeProvider>
@@ -125,9 +128,11 @@ export default function RootLayout() {
     <ThemeProvider>
       <OnboardingProvider>
         <TtsProvider>
-          <ChatProvider>
-            <SafeAreaProvider initialMetrics={providerInitialMetrics}>{content}</SafeAreaProvider>
-          </ChatProvider>
+          <MemoryProvider>
+            <ChatProvider>
+              <SafeAreaProvider initialMetrics={providerInitialMetrics}>{content}</SafeAreaProvider>
+            </ChatProvider>
+          </MemoryProvider>
         </TtsProvider>
       </OnboardingProvider>
     </ThemeProvider>

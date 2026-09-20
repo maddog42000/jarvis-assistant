@@ -10,7 +10,7 @@ export default function EntryRoute() {
   if (!isReady) return <LoadingEntryRoute />;
 
   if (hasCompletedOnboarding) {
-    return <Redirect href="/(tabs)/chat" />;
+    return <Redirect href="/(tabs)" />;
   }
 
     return <Redirect href={'/onboarding' as Href} />;

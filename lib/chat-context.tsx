@@ -11,6 +11,7 @@ import {
   type AssistantConfig,
   type ProviderId,
 } from '@/lib/assistant-config';
+import { useMemory } from '@/lib/memory-context';
 
 export interface Message {
   id: string;
@@ -92,6 +93,7 @@ function normalizeStoredConfig(raw: unknown): ApiConfig {
 }
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
+  const { memory, rememberNote } = useMemory();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -200,7 +202,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
 
     try {
-      const offlineResponse = checkOfflineCommands(content);
+      const offlineResponse = await checkOfflineCommands(content, rememberNote);
       if (offlineResponse) {
         addMessage('assistant', offlineResponse, true);
         return;
@@ -211,7 +213,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const assistantMessage = await requestAssistantReply(apiConfig, messages, content);
+      const assistantMessage = await requestAssistantReply(apiConfig, messages, content, memory);
       addMessage('assistant', assistantMessage);
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -220,7 +222,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       setJarvisState('idle');
       setIsLoading(false);
     }
-  }, [addMessage, apiConfig, messages]);
+  }, [addMessage, apiConfig, messages, memory, rememberNote]);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -265,8 +267,11 @@ type ChatTurn = { role: 'user' | 'assistant'; content: string };
 
 type RequestConfig = Pick<ApiConfig, 'providerId' | 'apiKey' | 'endpoint' | 'model' | 'agentId' | 'agents'>;
 
-async function requestAssistantReply(config: RequestConfig, history: Message[], content: string) {
+async function requestAssistantReply(config: RequestConfig, history: Message[], content: string, memory?: { name: string; focus: string; notes: string[] }) {
   const agent = getAgent(config);
+  const memoryContext = memory && (memory.name || memory.focus || memory.notes.length)
+    ? `\nLocal companion context (use naturally, do not mention storage): name=${memory.name || 'unknown'}; focus=${memory.focus || 'not set'}; notes=${memory.notes.join(' | ') || 'none'}.`
+    : '';
   const turns: ChatTurn[] = [
     ...history.slice(-18).map((message) => ({ role: message.role, content: message.content })),
     { role: 'user', content },
@@ -279,7 +284,7 @@ async function requestAssistantReply(config: RequestConfig, history: Message[], 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: agent.systemPrompt }] },
+        systemInstruction: { parts: [{ text: `${agent.systemPrompt}${memoryContext}` }] },
         contents: turns.map((turn) => ({ role: turn.role === 'assistant' ? 'model' : 'user', parts: [{ text: turn.content }] })),
         generationConfig: { temperature: 0.7, maxOutputTokens: 500 },
       }),
@@ -300,7 +305,7 @@ async function requestAssistantReply(config: RequestConfig, history: Message[], 
         model: config.model,
         max_tokens: 500,
         temperature: 0.7,
-        system: agent.systemPrompt,
+        system: `${agent.systemPrompt}${memoryContext}`,
         messages: turns,
       }),
     });
@@ -318,7 +323,7 @@ async function requestAssistantReply(config: RequestConfig, history: Message[], 
     },
     body: JSON.stringify({
       model: config.model,
-      messages: [{ role: 'system', content: agent.systemPrompt }, ...turns],
+      messages: [{ role: 'system', content: `${agent.systemPrompt}${memoryContext}` }, ...turns],
       temperature: 0.7,
       max_tokens: 500,
     }),
@@ -387,9 +392,17 @@ function getOfflineFallbackMessage() {
 }
 
 // Comprehensive offline command processor with 20+ commands.
-function checkOfflineCommands(input: string): string | null {
+async function checkOfflineCommands(input: string, rememberNote: (note: string) => Promise<void>): Promise<string | null> {
   const lowerInput = input.toLowerCase();
   const now = new Date();
+
+  if (lowerInput.startsWith('remember that ') || lowerInput.startsWith('remember ')) {
+    const note = input.replace(/^remember(?: that)?\s+/i, '').trim();
+    if (note) {
+      await rememberNote(note);
+      return `🧠 I’ll remember that on this device: **${note}**`;
+    }
+  }
 
   if (lowerInput.includes('status report') || lowerInput.includes('system status')) {
     return `📊 **System Status Report**\n\nTime: ${now.toLocaleTimeString()}\nDate: ${now.toLocaleDateString()}\nPlatform: ${Platform.OS === 'android' ? 'Android' : 'iOS'}\nStatus: All systems operational\nNetwork: Connected and stable`;

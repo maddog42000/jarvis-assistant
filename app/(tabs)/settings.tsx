@@ -10,11 +10,13 @@ import { getProvider, PROVIDERS, type ProviderId } from '@/lib/assistant-config'
 import { useChat } from '@/lib/chat-context';
 import { useOnboarding } from '@/lib/onboarding-context';
 import { useTts } from '@/lib/tts-context';
+import { useMemory } from '@/lib/memory-context';
 
 export default function SettingsScreen() {
   const { apiConfig, hasApiKey, updateApiConfig, testConnection, clearMessages } = useChat();
   const { resetOnboarding } = useOnboarding();
   const { voices, settings: ttsSettings, isLoadingVoices, updateSettings: updateTtsSettings } = useTts();
+  const { clearMemory } = useMemory();
   const [providerId, setProviderId] = useState<ProviderId>(apiConfig.providerId);
   const [apiKey, setApiKey] = useState(apiConfig.apiKey);
   const [endpoint, setEndpoint] = useState(apiConfig.endpoint);
@@ -94,6 +96,13 @@ export default function SettingsScreen() {
     Alert.alert('Clear chat history?', 'This removes every saved conversation from this device.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Clear history', style: 'destructive', onPress: () => void clearMessages() },
+    ]);
+  };
+
+  const confirmClearMemory = () => {
+    Alert.alert('Clear companion memory?', 'This removes your saved name, focus, and remembered notes from this device.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Clear memory', style: 'destructive', onPress: () => void clearMemory() },
     ]);
   };
 
@@ -226,6 +235,7 @@ export default function SettingsScreen() {
         <SectionTitle icon="tune" title="App preferences" subtitle="Walkthrough and local data" />
         <View className="gap-3">
           <ActionRow icon="school" title="Restart onboarding" description="Review provider setup, voice guidance, and offline mode" onPress={confirmReset} />
+          <ActionRow icon="favorite-border" title="Clear companion memory" description="Remove your saved name, focus, and local notes" onPress={confirmClearMemory} />
           <ActionRow icon="delete-outline" danger title="Clear chat history" description="Remove saved conversations from this device" onPress={confirmClear} />
         </View>
 
