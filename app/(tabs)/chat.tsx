@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
+  Linking,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -21,10 +22,11 @@ import { useChat } from '@/lib/chat-context';
 import { useTts } from '@/lib/tts-context';
 
 export default function ChatScreen() {
-  const { messages, isLoading, jarvisState, sendMessage } = useChat();
+  const { messages, isLoading, jarvisState, sendMessage, hasApiKey } = useChat();
   const { speak, settings: ttsSettings } = useTts();
   const [inputText, setInputText] = useState('');
   const flatListRef = useRef<FlatList>(null);
+  const inputRef = useRef<TextInput>(null);
   const lastSpokenIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -49,10 +51,16 @@ export default function ChatScreen() {
   };
 
   const handleVoiceInput = () => {
-    Alert.alert(
-      'Voice input',
-      'Speech-to-text is not included in this safe build yet. On Android, tap the microphone on your keyboard to dictate into the text box, then send it here.',
-    );
+    inputRef.current?.focus();
+    Alert.alert('Keyboard dictation', 'Your Android keyboard microphone is the safe voice-input option in this APK. Tap its microphone, speak, then tap Send.');
+  };
+
+  const openGoogleAi = async () => {
+    try {
+      await Linking.openURL('https://gemini.google.com/app');
+    } catch {
+      Alert.alert('Unable to open Google AI', 'Open Chrome and visit gemini.google.com/app.');
+    }
   };
 
   const handleQuickAction = async (command: string) => {
@@ -125,6 +133,7 @@ export default function ChatScreen() {
               <MaterialIcons name="mic-none" size={22} color="#18d5ff" />
             </Pressable>
             <TextInput
+              ref={inputRef}
               value={inputText}
               onChangeText={setInputText}
               placeholder="Ask Jarvis anything..."
@@ -147,6 +156,12 @@ export default function ChatScreen() {
             </Pressable>
           </View>
           <Text className="text-[11px] text-muted text-center mt-2">Offline commands work without an API key</Text>
+          {!hasApiKey ? (
+            <Pressable onPress={() => void openGoogleAi()} style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]} className="flex-row items-center justify-center gap-1 mt-2">
+              <MaterialIcons name="open-in-new" size={14} color="#18d5ff" />
+              <Text className="text-[11px] text-primary font-semibold">Open Google AI in Chrome</Text>
+            </Pressable>
+          ) : null}
         </View>
       </ScreenContainer>
     </KeyboardAvoidingView>

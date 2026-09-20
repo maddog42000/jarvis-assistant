@@ -26,6 +26,8 @@ export type AssistantConfig = {
   agents: AgentProfile[];
 };
 
+export const CURRENT_GEMINI_MODEL = 'gemini-3.6-flash';
+
 export const PROVIDERS: ProviderDefinition[] = [
   {
     id: 'openai',
@@ -41,7 +43,7 @@ export const PROVIDERS: ProviderDefinition[] = [
     name: 'Google Gemini',
     description: 'Google AI Studio Gemini generateContent API.',
     endpoint: 'https://generativelanguage.googleapis.com/v1beta',
-    model: 'gemini-2.0-flash',
+    model: CURRENT_GEMINI_MODEL,
     keyHint: 'AIza…',
     keyUrl: 'https://aistudio.google.com/app/apikey',
   },
@@ -102,6 +104,12 @@ export function getAgent(config: Pick<AssistantConfig, 'agentId' | 'agents'>) {
 
 export function normalizeEndpoint(endpoint: string) {
   return endpoint.trim().replace(/\/+$/, '');
+}
+
+export function normalizeGeminiModel(model: string) {
+  const normalized = model.trim();
+  if (!normalized || /^gemini-(2\.0|2\.5|3\.0)-flash(?:-.+)?$/i.test(normalized)) return CURRENT_GEMINI_MODEL;
+  return normalized;
 }
 
 export function getProviderKeyUrl(providerId: ProviderId) {

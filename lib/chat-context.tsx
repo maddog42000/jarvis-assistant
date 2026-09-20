@@ -7,6 +7,7 @@ import {
   getAgent,
   getProvider,
   normalizeEndpoint,
+  normalizeGeminiModel,
   type AgentProfile,
   type AssistantConfig,
   type ProviderId,
@@ -86,7 +87,7 @@ function normalizeStoredConfig(raw: unknown): ApiConfig {
     apiKey: apiKeys[providerId] ?? '',
     apiKeys,
     endpoint,
-    model: typeof stored.model === 'string' && stored.model.trim() ? stored.model : provider.model,
+    model: providerId === 'gemini' ? normalizeGeminiModel(typeof stored.model === 'string' ? stored.model : provider.model) : (typeof stored.model === 'string' && stored.model.trim() ? stored.model : provider.model),
     agentId,
     agents,
   };
@@ -159,7 +160,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         apiKey: config.apiKey ?? nextApiKeys[nextProviderId] ?? '',
         apiKeys: nextApiKeys,
         endpoint: config.endpoint ?? current.endpoint ?? nextProvider.endpoint,
-        model: config.model ?? current.model ?? nextProvider.model,
+        model: nextProviderId === 'gemini' ? normalizeGeminiModel(config.model ?? current.model ?? nextProvider.model) : (config.model ?? current.model ?? nextProvider.model),
         agents: config.agents ?? current.agents,
         agentId: config.agentId ?? current.agentId,
       };
@@ -183,7 +184,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       apiKeys: candidateApiKeys,
       apiKey: override.apiKey ?? candidateApiKeys[candidateProviderId] ?? '',
       endpoint: override.endpoint ?? apiConfig.endpoint,
-      model: override.model ?? apiConfig.model,
+      model: candidateProviderId === 'gemini' ? normalizeGeminiModel(override.model ?? apiConfig.model) : (override.model ?? apiConfig.model),
       agentId: override.agentId ?? apiConfig.agentId,
       agents: override.agents ?? apiConfig.agents,
     };
@@ -279,7 +280,8 @@ async function requestAssistantReply(config: RequestConfig, history: Message[], 
   const provider = getProvider(config.providerId);
 
   if (config.providerId === 'gemini') {
-    const endpoint = `${normalizeEndpoint(config.endpoint)}/models/${encodeURIComponent(config.model)}:generateContent?key=${encodeURIComponent(config.apiKey)}`;
+    const model = normalizeGeminiModel(config.model);
+    const endpoint = `${normalizeEndpoint(config.endpoint)}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(config.apiKey)}`;
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

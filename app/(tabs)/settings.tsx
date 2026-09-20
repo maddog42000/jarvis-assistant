@@ -219,6 +219,19 @@ export default function SettingsScreen() {
               </Pressable>
             ))}
           </View>
+          <Text className="text-sm font-semibold text-foreground mt-4">Language / accent pack</Text>
+          <Text className="text-xs text-muted mt-1">These options only work when the matching voice pack is installed on Android.</Text>
+          <View className="flex-row gap-2 mt-3">
+            {[
+              { label: 'US English', language: 'en-US' },
+              { label: 'UK English', language: 'en-GB' },
+              { label: 'Australian', language: 'en-AU' },
+            ].map((option) => (
+              <Pressable key={option.language} onPress={() => void updateTtsSettings({ language: option.language })} style={({ pressed }) => [{ opacity: pressed ? 0.75 : 1 }]} className={`flex-1 rounded-lg py-2 items-center border ${ttsSettings.language === option.language ? 'border-primary bg-primary/10' : 'border-border bg-background'}`}>
+                <Text className="text-[11px] font-semibold text-foreground">{option.label}</Text>
+              </Pressable>
+            ))}
+          </View>
           <Text className="text-xs text-muted mt-3">On Android, Play restarts a response after Stop because Expo’s speech API does not expose true pause, resume, or seek.</Text>
         </View>
 
