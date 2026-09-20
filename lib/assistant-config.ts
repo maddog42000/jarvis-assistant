@@ -26,7 +26,7 @@ export type AssistantConfig = {
   agents: AgentProfile[];
 };
 
-export const CURRENT_GEMINI_MODEL = 'gemini-3.6-flash';
+export const CURRENT_GEMINI_MODEL = 'gemini-3.8-flash';
 
 export const PROVIDERS: ProviderDefinition[] = [
   {
@@ -108,7 +108,7 @@ export function normalizeEndpoint(endpoint: string) {
 
 export function normalizeGeminiModel(model: string) {
   const normalized = model.trim();
-  if (!normalized || /^gemini-(2\.0|2\.5|3\.0)-flash(?:-.+)?$/i.test(normalized)) return CURRENT_GEMINI_MODEL;
+  if (!normalized || /^gemini-(2\.0|2\.5|3\.0|3\.5|3\.6)-flash(?:-.+)?$/i.test(normalized)) return CURRENT_GEMINI_MODEL;
   return normalized;
 }
 

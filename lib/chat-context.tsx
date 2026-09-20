@@ -177,6 +177,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const candidateProviderId = override.providerId ?? apiConfig.providerId;
     const candidateApiKeys = { ...apiConfig.apiKeys, ...(override.apiKeys ?? {}) };
     if (typeof override.apiKey === 'string') candidateApiKeys[candidateProviderId] = override.apiKey;
+    let detectedModel = candidateProviderId === 'gemini' ? await discoverGeminiModel(override.apiKey ?? candidateApiKeys[candidateProviderId] ?? '', override.endpoint ?? apiConfig.endpoint) : undefined;
     const candidate: ApiConfig = {
       ...apiConfig,
       ...override,
@@ -184,18 +185,19 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       apiKeys: candidateApiKeys,
       apiKey: override.apiKey ?? candidateApiKeys[candidateProviderId] ?? '',
       endpoint: override.endpoint ?? apiConfig.endpoint,
-      model: candidateProviderId === 'gemini' ? normalizeGeminiModel(override.model ?? apiConfig.model) : (override.model ?? apiConfig.model),
+      model: detectedModel ?? (candidateProviderId === 'gemini' ? normalizeGeminiModel(override.model ?? apiConfig.model) : (override.model ?? apiConfig.model)),
       agentId: override.agentId ?? apiConfig.agentId,
       agents: override.agents ?? apiConfig.agents,
     };
     if (!candidate.apiKey.trim()) return { ok: false, message: 'Add a provider key before testing the connection.' };
     try {
       await requestAssistantReply(candidate, [], 'Reply with exactly: Connection OK.');
-      return { ok: true, message: `${getProvider(candidate.providerId).name} is connected.` };
+      if (candidate.providerId === 'gemini' && detectedModel) await updateApiConfig({ providerId: 'gemini', model: detectedModel });
+      return { ok: true, message: `${getProvider(candidate.providerId).name} is connected using ${candidate.model}.` };
     } catch (error) {
       return { ok: false, message: formatConnectionError(error) };
     }
-  }, [apiConfig]);
+  }, [apiConfig, updateApiConfig]);
 
   const sendMessage = useCallback(async (content: string) => {
     addMessage('user', content);
@@ -386,7 +388,22 @@ function formatConnectionError(error: unknown) {
     return 'I could not reach that provider. Check your internet connection, endpoint, and provider selection in Settings.';
   }
   const message = error instanceof Error ? error.message : 'Unknown provider error.';
+  if (/API key|api key|permission|unauthorized|forbidden|401|403/i.test(message)) {
+    return `Gemini rejected this key. In Google AI Studio, open the key details and make sure it is an authorization key (or a restricted key with the Generative Language API enabled), then create a fresh key and try again. Details: ${message}`;
+  }
   return `I could not complete that request. ${message}`;
+}
+
+async function discoverGeminiModel(apiKey: string, endpoint: string) {
+  if (!apiKey.trim()) throw new Error('Add a Gemini API key before automatic setup.');
+  const response = await fetch(`${normalizeEndpoint(endpoint || getProvider('gemini').endpoint)}/models?key=${encodeURIComponent(apiKey)}&pageSize=100`);
+  const payload = await readResponseOrThrow(response, 'Gemini model discovery');
+  const models = (payload as { models?: Array<{ name?: string; supportedGenerationMethods?: string[] }> }).models ?? [];
+  const supported = models
+    .filter((model) => model.name && model.supportedGenerationMethods?.includes('generateContent'))
+    .map((model) => model.name!.replace(/^models\//, ''));
+  const preferred = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash'];
+  return preferred.find((model) => supported.includes(model)) ?? supported.find((model) => /flash/i.test(model)) ?? supported[0] ?? normalizeGeminiModel('');
 }
 
 function getOfflineFallbackMessage() {

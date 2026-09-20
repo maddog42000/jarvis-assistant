@@ -153,15 +153,24 @@ export default function SettingsScreen() {
           </View>
           <Text className="text-xs text-muted mt-2">Saved separately for {provider.name}. You can switch providers without losing another provider’s key.</Text>
 
-          <Text className="text-sm font-semibold text-foreground mt-4 mb-2">4. Confirm endpoint and model</Text>
-          <TextInput value={endpoint} onChangeText={setEndpoint} placeholder={provider.endpoint} placeholderTextColor="#77808c" autoCapitalize="none" autoCorrect={false} className="bg-background border border-border rounded-xl px-4 py-4 text-foreground mb-2" />
-          <TextInput value={model} onChangeText={setModel} placeholder={provider.model} placeholderTextColor="#77808c" autoCapitalize="none" autoCorrect={false} className="bg-background border border-border rounded-xl px-4 py-4 text-foreground" />
-          <Text className="text-xs text-muted mt-2">Use the exact model name enabled for your account. Custom providers must expose an OpenAI-compatible /chat/completions endpoint.</Text>
+          <Text className="text-sm font-semibold text-foreground mt-4 mb-2">4. Automatic setup</Text>
+          {providerId === 'gemini' ? (
+            <View className="bg-background border border-primary/30 rounded-xl p-3">
+              <Text className="text-sm font-semibold text-foreground">Jarvis will find the right model</Text>
+              <Text className="text-xs text-muted leading-relaxed mt-1">Testing asks Google which models this key can use, selects the best available Flash model, and saves it automatically. You do not need to edit the endpoint or model.</Text>
+            </View>
+          ) : (
+            <>
+              <TextInput value={endpoint} onChangeText={setEndpoint} placeholder={provider.endpoint} placeholderTextColor="#77808c" autoCapitalize="none" autoCorrect={false} className="bg-background border border-border rounded-xl px-4 py-4 text-foreground mb-2" />
+              <TextInput value={model} onChangeText={setModel} placeholder={provider.model} placeholderTextColor="#77808c" autoCapitalize="none" autoCorrect={false} className="bg-background border border-border rounded-xl px-4 py-4 text-foreground" />
+              <Text className="text-xs text-muted mt-2">Custom providers must expose an OpenAI-compatible /chat/completions endpoint.</Text>
+            </>
+          )}
 
           <View className="flex-row gap-2 mt-4">
             <Pressable onPress={() => void handleTestConnection()} disabled={connectionState === 'testing'} style={({ pressed }) => [{ opacity: pressed ? 0.75 : connectionState === 'testing' ? 0.5 : 1 }]} className="flex-1 border border-primary rounded-xl py-3 flex-row items-center justify-center gap-2">
               <MaterialIcons name={connectionState === 'testing' ? 'sync' : 'wifi-tethering'} size={18} color="#18d5ff" />
-              <Text className="font-bold text-primary">{connectionState === 'testing' ? 'Testing…' : 'Test connection'}</Text>
+              <Text className="font-bold text-primary">{connectionState === 'testing' ? 'Auto-detecting…' : providerId === 'gemini' ? 'Auto setup & test' : 'Test connection'}</Text>
             </Pressable>
             <Pressable onPress={() => void saveConnection()} style={({ pressed }) => [{ opacity: pressed ? 0.75 : 1 }]} className="flex-1 bg-primary rounded-xl py-3 flex-row items-center justify-center gap-2">
               <MaterialIcons name={saved ? 'check' : 'save'} size={18} color="#061018" />
