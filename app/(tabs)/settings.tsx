@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Linking, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Platform, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
@@ -24,6 +24,7 @@ export default function SettingsScreen() {
   const [agentId, setAgentId] = useState(apiConfig.agentId);
   const [showKey, setShowKey] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [connectionState, setConnectionState] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [connectionMessage, setConnectionMessage] = useState('');
 
@@ -47,15 +48,26 @@ export default function SettingsScreen() {
     setModel(nextProviderId === 'custom' ? apiConfig.model : nextProvider.model);
     setConnectionState('idle');
     setConnectionMessage('');
+    setSaveState('idle');
   };
 
   const saveConnection = async () => {
+    if (saveState === 'saving' || connectionState === 'testing') return;
+    setSaveState('saving');
+    setConnectionState('idle');
+    setConnectionMessage('Saving your provider key securely on this device…');
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch {
       // Haptics are optional.
     }
     const cleanKey = apiKey.trim();
+    if (!cleanKey) {
+      setSaveState('error');
+      setConnectionState('error');
+      setConnectionMessage(`Add your ${provider.name} API key before saving setup.`);
+      return;
+    }
     await updateApiConfig({
       providerId,
       apiKey: cleanKey,
@@ -65,24 +77,43 @@ export default function SettingsScreen() {
       agentId,
     });
     setSaved(true);
-    setConnectionState('idle');
-    setConnectionMessage('');
+    setSaveState('success');
+    setConnectionState('success');
+    setConnectionMessage(`${provider.name} setup saved on this device.`);
     setTimeout(() => setSaved(false), 1800);
+    setTimeout(() => setSaveState('idle'), 2200);
+  };
+
+  const handleSaveConnection = async () => {
+    try {
+      await saveConnection();
+    } catch (error) {
+      setSaveState('error');
+      setConnectionState('error');
+      setConnectionMessage(error instanceof Error ? `Could not save setup: ${error.message}` : 'Could not save setup. Please try again.');
+    }
   };
 
   const handleTestConnection = async () => {
+    if (connectionState === 'testing' || saveState === 'saving') return;
     setConnectionState('testing');
-    setConnectionMessage('Sending a small test request…');
-    const result = await testConnection({
-      providerId,
-      apiKey: apiKey.trim(),
-      apiKeys: { ...apiConfig.apiKeys, [providerId]: apiKey.trim() },
-      endpoint: endpoint.trim() || provider.endpoint,
-      model: model.trim() || provider.model,
-      agentId,
-    });
-    setConnectionState(result.ok ? 'success' : 'error');
-    setConnectionMessage(result.message);
+    setSaveState('idle');
+    setConnectionMessage('Checking your key and automatically finding a compatible Gemini model…');
+    try {
+      const result = await testConnection({
+        providerId,
+        apiKey: apiKey.trim(),
+        apiKeys: { ...apiConfig.apiKeys, [providerId]: apiKey.trim() },
+        endpoint: endpoint.trim() || provider.endpoint,
+        model: model.trim() || provider.model,
+        agentId,
+      });
+      setConnectionState(result.ok ? 'success' : 'error');
+      setConnectionMessage(result.message);
+    } catch (error) {
+      setConnectionState('error');
+      setConnectionMessage(error instanceof Error ? error.message : 'Connection test failed. Please check the key and try again.');
+    }
   };
 
   const confirmReset = () => {
@@ -168,13 +199,13 @@ export default function SettingsScreen() {
           )}
 
           <View className="flex-row gap-2 mt-4">
-            <Pressable onPress={() => void handleTestConnection()} disabled={connectionState === 'testing'} style={({ pressed }) => [{ opacity: pressed ? 0.75 : connectionState === 'testing' ? 0.5 : 1 }]} className="flex-1 border border-primary rounded-xl py-3 flex-row items-center justify-center gap-2">
-              <MaterialIcons name={connectionState === 'testing' ? 'sync' : 'wifi-tethering'} size={18} color="#18d5ff" />
+            <Pressable onPress={() => void handleTestConnection()} disabled={connectionState === 'testing' || saveState === 'saving'} style={({ pressed }) => [{ opacity: pressed ? 0.75 : connectionState === 'testing' || saveState === 'saving' ? 0.5 : 1 }]} className="flex-1 border border-primary rounded-xl py-3 flex-row items-center justify-center gap-2">
+              {connectionState === 'testing' ? <ActivityIndicator size="small" color="#18d5ff" /> : <MaterialIcons name="wifi-tethering" size={18} color="#18d5ff" />}
               <Text className="font-bold text-primary">{connectionState === 'testing' ? 'Auto-detecting…' : providerId === 'gemini' ? 'Auto setup & test' : 'Test connection'}</Text>
             </Pressable>
-            <Pressable onPress={() => void saveConnection()} style={({ pressed }) => [{ opacity: pressed ? 0.75 : 1 }]} className="flex-1 bg-primary rounded-xl py-3 flex-row items-center justify-center gap-2">
-              <MaterialIcons name={saved ? 'check' : 'save'} size={18} color="#061018" />
-              <Text className="font-bold text-background">{saved ? 'Saved' : 'Save setup'}</Text>
+            <Pressable onPress={() => void handleSaveConnection()} disabled={saveState === 'saving' || connectionState === 'testing'} style={({ pressed }) => [{ opacity: pressed ? 0.75 : saveState === 'saving' || connectionState === 'testing' ? 0.55 : 1 }]} className="flex-1 bg-primary rounded-xl py-3 flex-row items-center justify-center gap-2">
+              {saveState === 'saving' ? <ActivityIndicator size="small" color="#061018" /> : <MaterialIcons name={saved || saveState === 'success' ? 'check' : saveState === 'error' ? 'error-outline' : 'save'} size={18} color="#061018" />}
+              <Text className="font-bold text-background">{saveState === 'saving' ? 'Saving…' : saved || saveState === 'success' ? 'Saved' : saveState === 'error' ? 'Retry save' : 'Save setup'}</Text>
             </Pressable>
           </View>
           {connectionMessage ? <Text className={`text-xs leading-relaxed mt-3 ${connectionState === 'success' ? 'text-success' : connectionState === 'error' ? 'text-error' : 'text-muted'}`}>{connectionMessage}</Text> : null}

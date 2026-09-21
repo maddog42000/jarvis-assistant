@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   FlatList,
+  Keyboard,
   Linking,
   KeyboardAvoidingView,
   Platform,
@@ -25,6 +26,7 @@ export default function ChatScreen() {
   const { messages, isLoading, jarvisState, sendMessage, hasApiKey } = useChat();
   const { speak, settings: ttsSettings } = useTts();
   const [inputText, setInputText] = useState('');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
   const lastSpokenIdRef = useRef<string | null>(null);
@@ -37,6 +39,18 @@ export default function ChatScreen() {
       if (ttsSettings.autoSpeak) speak(latest.content);
     }
   }, [messages, speak, ttsSettings.autoSpeak]);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+      requestAnimationFrame(() => flatListRef.current?.scrollToEnd({ animated: true }));
+    });
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   const handleSend = async () => {
     const text = inputText.trim();
@@ -91,7 +105,7 @@ export default function ChatScreen() {
 
         <View className="flex-1">
           {messages.length === 0 ? (
-            <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24 }} showsVerticalScrollIndicator={false}>
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, padding: 24 }} showsVerticalScrollIndicator={false}>
               <View className="flex-1 justify-center items-center">
                 <JarvisAvatar state={jarvisState} size={104} />
                 <Text className="text-center text-foreground text-2xl font-bold mt-6">How can I help?</Text>
@@ -110,6 +124,8 @@ export default function ChatScreen() {
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => <ChatMessage message={item} />}
               contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
               showsVerticalScrollIndicator={false}
             />
           )}
@@ -120,7 +136,7 @@ export default function ChatScreen() {
           )}
         </View>
 
-        <View className="bg-surface border-t border-border px-4 pt-3 pb-4">
+        <View className="bg-surface border-t border-border px-4 pt-3" style={{ paddingBottom: keyboardVisible ? 8 : 16 }}>
           <SpeechPlayer />
           {messages.length > 0 && <CommandCarousel onSelect={handleQuickAction} />}
           <View className="flex-row gap-2 items-end mt-3">
@@ -142,6 +158,8 @@ export default function ChatScreen() {
               multiline
               maxLength={500}
               editable={!isLoading}
+              scrollEnabled
+              onFocus={() => requestAnimationFrame(() => flatListRef.current?.scrollToEnd({ animated: true }))}
               returnKeyType="send"
               onSubmitEditing={() => void handleSend()}
             />

@@ -177,20 +177,22 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const candidateProviderId = override.providerId ?? apiConfig.providerId;
     const candidateApiKeys = { ...apiConfig.apiKeys, ...(override.apiKeys ?? {}) };
     if (typeof override.apiKey === 'string') candidateApiKeys[candidateProviderId] = override.apiKey;
-    let detectedModel = candidateProviderId === 'gemini' ? await discoverGeminiModel(override.apiKey ?? candidateApiKeys[candidateProviderId] ?? '', override.endpoint ?? apiConfig.endpoint) : undefined;
-    const candidate: ApiConfig = {
-      ...apiConfig,
-      ...override,
-      providerId: candidateProviderId,
-      apiKeys: candidateApiKeys,
-      apiKey: override.apiKey ?? candidateApiKeys[candidateProviderId] ?? '',
-      endpoint: override.endpoint ?? apiConfig.endpoint,
-      model: detectedModel ?? (candidateProviderId === 'gemini' ? normalizeGeminiModel(override.model ?? apiConfig.model) : (override.model ?? apiConfig.model)),
-      agentId: override.agentId ?? apiConfig.agentId,
-      agents: override.agents ?? apiConfig.agents,
-    };
-    if (!candidate.apiKey.trim()) return { ok: false, message: 'Add a provider key before testing the connection.' };
     try {
+      const detectedModel = candidateProviderId === 'gemini'
+        ? await discoverGeminiModel(override.apiKey ?? candidateApiKeys[candidateProviderId] ?? '', override.endpoint ?? apiConfig.endpoint)
+        : undefined;
+      const candidate: ApiConfig = {
+        ...apiConfig,
+        ...override,
+        providerId: candidateProviderId,
+        apiKeys: candidateApiKeys,
+        apiKey: override.apiKey ?? candidateApiKeys[candidateProviderId] ?? '',
+        endpoint: override.endpoint ?? apiConfig.endpoint,
+        model: detectedModel ?? (candidateProviderId === 'gemini' ? normalizeGeminiModel(override.model ?? apiConfig.model) : (override.model ?? apiConfig.model)),
+        agentId: override.agentId ?? apiConfig.agentId,
+        agents: override.agents ?? apiConfig.agents,
+      };
+      if (!candidate.apiKey.trim()) return { ok: false, message: 'Add a provider key before testing the connection.' };
       await requestAssistantReply(candidate, [], 'Reply with exactly: Connection OK.');
       if (candidate.providerId === 'gemini' && detectedModel) await updateApiConfig({ providerId: 'gemini', model: detectedModel });
       return { ok: true, message: `${getProvider(candidate.providerId).name} is connected using ${candidate.model}.` };
