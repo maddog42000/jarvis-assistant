@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { ScreenContainer } from '@/components/screen-container';
+import { ConnectionResultCard, type ConnectionStatus } from '@/components/connection-result-card';
 import { useChat } from '@/lib/chat-context';
 import { useOnboarding } from '@/lib/onboarding-context';
 import { getProvider, PROVIDERS, type ProviderId } from '@/lib/assistant-config';
@@ -12,22 +13,59 @@ const TOTAL_STEPS = 4;
 
 export default function OnboardingScreen() {
   const { currentStep, setCurrentStep, completeOnboarding } = useOnboarding();
-  const { updateApiConfig } = useChat();
+  const { updateApiConfig, testConnection } = useChat();
   const [providerId, setProviderId] = useState<ProviderId>('openai');
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<ConnectionStatus>('idle');
+  const [verificationMessage, setVerificationMessage] = useState('');
 
   const finish = async () => {
-    if (apiKey.trim()) {
-      await updateApiConfig({ providerId, apiKey: apiKey.trim(), apiKeys: { [providerId]: apiKey.trim() } });
-      setSaved(true);
-    }
     await completeOnboarding();
     router.replace('/(tabs)/chat');
   };
 
+  const verifyKey = async () => {
+    const cleanKey = apiKey.trim();
+    if (!cleanKey) {
+      setVerificationStatus('error');
+      setVerificationMessage('Paste a provider key first, or skip this step to use offline mode.');
+      return false;
+    }
+
+    setVerificationStatus('testing');
+    setVerificationMessage(providerId === 'gemini' ? 'Validating your key, finding a compatible model, and sending a small test request…' : 'Validating your key and sending a small test request…');
+    try {
+      const result = await testConnection({
+        providerId,
+        apiKey: cleanKey,
+        apiKeys: { [providerId]: cleanKey },
+        endpoint: getProvider(providerId).endpoint,
+        model: getProvider(providerId).model,
+      });
+      if (!result.ok) {
+        setVerificationStatus('error');
+        setVerificationMessage(result.message);
+        return false;
+      }
+      await updateApiConfig({ providerId, apiKey: cleanKey, apiKeys: { [providerId]: cleanKey } });
+      setSaved(true);
+      setVerificationStatus('success');
+      setVerificationMessage(result.message);
+      return true;
+    } catch (error) {
+      setVerificationStatus('error');
+      setVerificationMessage(error instanceof Error ? error.message : 'The connection test failed. Please try again.');
+      return false;
+    }
+  };
+
   const next = () => {
+    if (currentStep === 2 && apiKey.trim() && verificationStatus !== 'success') {
+      void verifyKey();
+      return;
+    }
     if (currentStep < TOTAL_STEPS - 1) setCurrentStep(currentStep + 1);
     else void finish();
   };
@@ -76,7 +114,7 @@ export default function OnboardingScreen() {
             <Text className="text-sm font-semibold text-foreground mt-7 mb-2">Choose a provider now or later</Text>
             <View className="gap-2">
               {PROVIDERS.slice(0, 3).map((provider) => (
-                <Pressable key={provider.id} onPress={() => setProviderId(provider.id)} style={({ pressed }) => [{ opacity: pressed ? 0.78 : 1 }]} className={`rounded-xl border p-3 flex-row items-center gap-3 ${providerId === provider.id ? 'border-primary bg-primary/10' : 'border-border bg-surface'}`}>
+                <Pressable key={provider.id} onPress={() => { setProviderId(provider.id); setApiKey(''); setVerificationStatus('idle'); setVerificationMessage(''); }} style={({ pressed }) => [{ opacity: pressed ? 0.78 : 1 }]} className={`rounded-xl border p-3 flex-row items-center gap-3 ${providerId === provider.id ? 'border-primary bg-primary/10' : 'border-border bg-surface'}`}>
                   <MaterialIcons name={providerId === provider.id ? 'radio-button-checked' : 'radio-button-unchecked'} size={20} color={providerId === provider.id ? '#18d5ff' : '#77808c'} />
                   <View className="flex-1"><Text className="text-sm font-semibold text-foreground">{provider.name}</Text><Text className="text-xs text-muted mt-1">{provider.description}</Text></View>
                 </Pressable>
@@ -113,7 +151,7 @@ export default function OnboardingScreen() {
             <View className="flex-row items-center bg-surface border border-border rounded-xl px-4">
               <TextInput
                 value={apiKey}
-                onChangeText={setApiKey}
+                onChangeText={(value) => { setApiKey(value); setVerificationStatus('idle'); setVerificationMessage(''); }}
                 placeholder={getProvider(providerId).keyHint}
                 placeholderTextColor="#77808c"
                 secureTextEntry={!showKey}
@@ -126,6 +164,8 @@ export default function OnboardingScreen() {
               </Pressable>
             </View>
             <Text className="text-xs text-muted mt-2">Stored locally for {getProvider(providerId).name}. You can skip this and use offline mode.</Text>
+            <ConnectionResultCard status={verificationStatus} message={verificationMessage} onRetry={() => void verifyKey()} />
+            {verificationStatus === 'success' ? <Text className="text-xs text-success mt-3">Key verified. Continue to finish onboarding.</Text> : null}
           </View>
         )}
 
@@ -147,7 +187,7 @@ export default function OnboardingScreen() {
 
       <View className="px-6 pb-6 gap-3">
         <Pressable onPress={next} style={({ pressed }) => [{ opacity: pressed ? 0.75 : 1 }]} className="bg-primary rounded-xl py-4 flex-row items-center justify-center gap-2">
-          <Text className="text-background font-bold">{currentStep === TOTAL_STEPS - 1 ? 'Enter Jarvis' : 'Continue'}</Text>
+          <Text className="text-background font-bold">{currentStep === TOTAL_STEPS - 1 ? 'Enter Jarvis' : currentStep === 2 && apiKey.trim() && verificationStatus !== 'success' ? 'Verify key' : 'Continue'}</Text>
           <MaterialIcons name="arrow-forward" size={18} color="#061018" />
         </Pressable>
         <Pressable onPress={() => void skip()} style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]} className="py-3 items-center">

@@ -5,6 +5,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
 
 import { ScreenContainer } from '@/components/screen-container';
+import { ConnectionResultCard } from '@/components/connection-result-card';
 import { PRESET_COMMANDS } from '@/components/voice-and-command-widgets';
 import { getProvider, PROVIDERS, type ProviderId } from '@/lib/assistant-config';
 import { useChat } from '@/lib/chat-context';
@@ -208,7 +209,11 @@ export default function SettingsScreen() {
               <Text className="font-bold text-background">{saveState === 'saving' ? 'Saving…' : saved || saveState === 'success' ? 'Saved' : saveState === 'error' ? 'Retry save' : 'Save setup'}</Text>
             </Pressable>
           </View>
-          {connectionMessage ? <Text className={`text-xs leading-relaxed mt-3 ${connectionState === 'success' ? 'text-success' : connectionState === 'error' ? 'text-error' : 'text-muted'}`}>{connectionMessage}</Text> : null}
+          <ConnectionResultCard
+            status={saveState === 'saving' ? 'testing' : connectionState}
+            message={connectionMessage}
+            onRetry={() => void handleTestConnection()}
+          />
         </View>
 
         <SectionTitle icon="smart-toy" title="Agent profile" subtitle="The selected profile controls tone and instructions" />

@@ -41,3 +41,9 @@ Use the Expo/EAS Android build workflow appropriate to the receiving environment
 2. Run `pnpm check`, `pnpm test`, and `npx expo config --type public`.
 3. Run the app on Android, enter a fresh Gemini authorization or properly restricted key in Settings, and tap **Auto setup & test**.
 4. Build a release APK with the approved Expo/EAS workflow and test onboarding, Settings, Gemini chat, keyboard dictation, and TTS on a physical device.
+
+## Latest connection and proxy upgrade
+
+Onboarding now verifies an entered provider key before allowing setup to finish. For Gemini, verification lists the models available to the key, selects a compatible `generateContent` model, sends a small `Connection OK` request, and displays the result in `components/connection-result-card.tsx`. Failed tests stay on the key step and expose a **Retry connection** action. Settings uses the same card for testing and saving feedback.
+
+When no personal provider key is configured, non-offline chat attempts the public `assistant.complete` tRPC route in `server/routers.ts`. That route uses the server’s built-in `invokeLLM` helper, so the provider credential stays server-side and is never sent to the mobile client. Input is bounded to 12 turns and 3,000 characters per message, and the route has a lightweight per-client request limit. If the proxy is unavailable, Jarvis falls back to offline guidance. Keep the server’s LLM credential in the deployment secret configuration; never add it to the mobile bundle or repository.

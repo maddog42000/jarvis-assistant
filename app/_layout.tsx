@@ -86,6 +86,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
+          <ChatProvider>
           {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
           {/* If a screen needs the native header, explicitly enable it and set a human title via Stack.Screen options. */}
           {/* in order for ios apps tab switching to work properly, use presentation: "fullScreenModal" for login page, whenever you decide to use presentation: "modal*/}
@@ -94,6 +95,7 @@ export default function RootLayout() {
             <Stack.Screen name="onboarding" />
             <Stack.Screen name="oauth/callback" />
           </Stack>
+          </ChatProvider>
           <StatusBar style="auto" />
         </QueryClientProvider>
       </trpc.Provider>
@@ -108,7 +110,6 @@ export default function RootLayout() {
         <OnboardingProvider>
           <TtsProvider>
             <MemoryProvider>
-              <ChatProvider>
               <SafeAreaProvider initialMetrics={providerInitialMetrics}>
             <SafeAreaFrameContext.Provider value={frame}>
               <SafeAreaInsetsContext.Provider value={insets}>
@@ -116,7 +117,6 @@ export default function RootLayout() {
               </SafeAreaInsetsContext.Provider>
             </SafeAreaFrameContext.Provider>
               </SafeAreaProvider>
-              </ChatProvider>
             </MemoryProvider>
           </TtsProvider>
         </OnboardingProvider>
@@ -129,9 +129,7 @@ export default function RootLayout() {
       <OnboardingProvider>
         <TtsProvider>
           <MemoryProvider>
-            <ChatProvider>
-              <SafeAreaProvider initialMetrics={providerInitialMetrics}>{content}</SafeAreaProvider>
-            </ChatProvider>
+            <SafeAreaProvider initialMetrics={providerInitialMetrics}>{content}</SafeAreaProvider>
           </MemoryProvider>
         </TtsProvider>
       </OnboardingProvider>

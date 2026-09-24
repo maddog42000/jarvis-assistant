@@ -13,6 +13,7 @@ import {
   type ProviderId,
 } from '@/lib/assistant-config';
 import { useMemory } from '@/lib/memory-context';
+import { trpc } from '@/lib/trpc';
 
 export interface Message {
   id: string;
@@ -95,6 +96,7 @@ function normalizeStoredConfig(raw: unknown): ApiConfig {
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const { memory, rememberNote } = useMemory();
+  const serverAssistant = trpc.assistant.complete.useMutation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -214,7 +216,20 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!apiConfig.apiKey.trim()) {
-        addMessage('assistant', getOfflineFallbackMessage());
+        try {
+          const agent = getAgent(apiConfig);
+          const memoryContext = memory && (memory.name || memory.focus || memory.notes.length)
+            ? `\nLocal companion context (use naturally, do not mention storage): name=${memory.name || 'unknown'}; focus=${memory.focus || 'not set'}; notes=${memory.notes.join(' | ') || 'none'}.`
+            : '';
+          const proxyReply = await serverAssistant.mutateAsync({
+            systemPrompt: `${agent.systemPrompt}${memoryContext}`,
+            messages: [...messages.slice(-10), { role: 'user' as const, content }],
+          });
+          addMessage('assistant', proxyReply.content);
+        } catch (error) {
+          console.error('Server assistant proxy unavailable:', error);
+          addMessage('assistant', getOfflineFallbackMessage());
+        }
         return;
       }
 
@@ -227,7 +242,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       setJarvisState('idle');
       setIsLoading(false);
     }
-  }, [addMessage, apiConfig, messages, memory, rememberNote]);
+  }, [addMessage, apiConfig, messages, memory, rememberNote, serverAssistant]);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -409,7 +424,7 @@ async function discoverGeminiModel(apiKey: string, endpoint: string) {
 }
 
 function getOfflineFallbackMessage() {
-  return 'I am in offline mode because no provider key is configured. You can use the quick-command deck, Android keyboard dictation, Google Assistant, or a browser AI mode. To connect an agent, open Settings, choose a provider, paste its key, select an agent, and tap Test connection before saving.';
+  return 'The secure server assistant is temporarily unavailable, so I am in offline mode. You can still use the quick-command deck and Android keyboard dictation. To use your own provider, open Settings, paste a key, test the connection, and save setup.';
 }
 
 // Comprehensive offline command processor with 20+ commands.
