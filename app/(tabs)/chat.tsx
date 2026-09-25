@@ -3,7 +3,6 @@ import {
   Alert,
   FlatList,
   Keyboard,
-  Linking,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -23,7 +22,7 @@ import { useChat } from '@/lib/chat-context';
 import { useTts } from '@/lib/tts-context';
 
 export default function ChatScreen() {
-  const { messages, isLoading, jarvisState, sendMessage, hasApiKey } = useChat();
+  const { messages, isLoading, jarvisState, sendMessage } = useChat();
   const { speak, settings: ttsSettings } = useTts();
   const [inputText, setInputText] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -69,14 +68,6 @@ export default function ChatScreen() {
     Alert.alert('Keyboard dictation', 'Your Android keyboard microphone is the safe voice-input option in this APK. Tap its microphone, speak, then tap Send.');
   };
 
-  const openGoogleAi = async () => {
-    try {
-      await Linking.openURL('https://gemini.google.com/app');
-    } catch {
-      Alert.alert('Unable to open Google AI', 'Open Chrome and visit gemini.google.com/app.');
-    }
-  };
-
   const handleQuickAction = async (command: string) => {
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -95,7 +86,7 @@ export default function ChatScreen() {
           </View>
           <View className="flex-1">
             <Text className="text-2xl font-bold text-foreground">Jarvis</Text>
-            <Text className="text-xs text-muted mt-0.5">Private assistant · offline first</Text>
+            <Text className="text-xs text-muted mt-0.5">Offline first · secure AI backup</Text>
           </View>
           <View className="flex-row items-center gap-1">
             <View className="w-2 h-2 rounded-full bg-success" />
@@ -173,13 +164,7 @@ export default function ChatScreen() {
               <MaterialIcons name="arrow-upward" size={22} color="#061018" />
             </Pressable>
           </View>
-          <Text className="text-[11px] text-muted text-center mt-2">Offline commands work without an API key</Text>
-          {!hasApiKey ? (
-            <Pressable onPress={() => void openGoogleAi()} style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]} className="flex-row items-center justify-center gap-1 mt-2">
-              <MaterialIcons name="open-in-new" size={14} color="#18d5ff" />
-              <Text className="text-[11px] text-primary font-semibold">Open Google AI in Chrome</Text>
-            </Pressable>
-          ) : null}
+          <Text className="text-[11px] text-muted text-center mt-2">Offline commands work without a key · AI backup stays in Jarvis</Text>
         </View>
       </ScreenContainer>
     </KeyboardAvoidingView>

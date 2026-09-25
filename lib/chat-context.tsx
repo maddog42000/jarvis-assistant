@@ -14,6 +14,7 @@ import {
 } from '@/lib/assistant-config';
 import { useMemory } from '@/lib/memory-context';
 import { trpc } from '@/lib/trpc';
+import { buildServerAssistantInput, getServerFallbackNotice } from '@/lib/server-assistant';
 
 export interface Message {
   id: string;
@@ -218,13 +219,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       if (!apiConfig.apiKey.trim()) {
         try {
           const agent = getAgent(apiConfig);
-          const memoryContext = memory && (memory.name || memory.focus || memory.notes.length)
-            ? `\nLocal companion context (use naturally, do not mention storage): name=${memory.name || 'unknown'}; focus=${memory.focus || 'not set'}; notes=${memory.notes.join(' | ') || 'none'}.`
-            : '';
-          const proxyReply = await serverAssistant.mutateAsync({
-            systemPrompt: `${agent.systemPrompt}${memoryContext}`,
-            messages: [...messages.slice(-10), { role: 'user' as const, content }],
-          });
+          const proxyReply = await serverAssistant.mutateAsync(buildServerAssistantInput(
+            agent.systemPrompt,
+            [...messages.slice(-10), { role: 'user' as const, content }],
+            memory,
+          ));
           addMessage('assistant', proxyReply.content);
         } catch (error) {
           console.error('Server assistant proxy unavailable:', error);
@@ -233,8 +232,25 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const assistantMessage = await requestAssistantReply(apiConfig, messages, content, memory);
-      addMessage('assistant', assistantMessage);
+      try {
+        const assistantMessage = await requestAssistantReply(apiConfig, messages, content, memory);
+        addMessage('assistant', assistantMessage);
+      } catch (primaryError) {
+        // Keep the user in Jarvis: quietly retry through the server-side backup AI
+        // instead of opening Chrome or handing the conversation to another app.
+        try {
+          const agent = getAgent(apiConfig);
+          const proxyReply = await serverAssistant.mutateAsync(buildServerAssistantInput(
+            agent.systemPrompt,
+            [...messages.slice(-10), { role: 'user' as const, content }],
+            memory,
+          ));
+          addMessage('assistant', `${getServerFallbackNotice(getProvider(apiConfig.providerId).name)}\n\n${proxyReply.content}`);
+        } catch (fallbackError) {
+          console.error('Both provider and server assistant failed:', { primaryError, fallbackError });
+          addMessage('assistant', formatConnectionError(primaryError));
+        }
+      }
     } catch (error) {
       console.error('Failed to send message:', error);
       addMessage('assistant', formatConnectionError(error));
