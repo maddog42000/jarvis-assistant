@@ -10,6 +10,14 @@ describe('assistant configuration', () => {
     expect(getProvider('anthropic').endpoint).toBe('https://api.anthropic.com/v1');
   });
 
+  it('keeps an official key page and free-tier note for every provider', () => {
+    for (const providerId of ['openai', 'gemini', 'anthropic', 'custom'] as const) {
+      const provider = getProvider(providerId);
+      expect(provider.keyUrl).toMatch(/^https:\/\//);
+      expect(provider.freeTierNote.length).toBeGreaterThan(10);
+    }
+  });
+
   it('normalizes endpoint slashes without changing the protocol', () => {
     expect(normalizeEndpoint('https://api.example.com/v1///')).toBe('https://api.example.com/v1');
   });

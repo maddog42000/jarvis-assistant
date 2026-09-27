@@ -57,3 +57,10 @@ Chat now keeps users inside Jarvis in both cases: with no personal key it uses t
 The app now uses `lib/fallback-routing.ts` for timeout-safe provider failover. Direct provider requests abort after 15 seconds; the server proxy fails after 20 seconds. Settings includes **Test Jarvis online backup**, which verifies the server route without requiring a personal key. Run `pnpm test:fallback` to simulate provider errors and a hung route. See `docs/fallback-routing.md` for the route contract and troubleshooting steps.
 
 Android cannot read API keys or answers from other installed apps such as Gemini, ChatGPT, Chrome, or home-screen widgets. The supported paths are: paste a key into Jarvis Settings, use Gemini automatic model discovery, or use the server-side Jarvis backup. No hidden app scraping or background control was added.
+
+## Latest mobile UX improvements
+
+- Chat header now probes connectivity and shows **Online**, **Offline**, or **Checking**; tapping the status retries the probe.
+- Settings voice controls now include installed voice selection, Warm/Natural/Bright presets, pitch and speed +/- adjustments, and a voice preview button.
+- Provider setup includes official key-page links, current free-tier guidance, a user-initiated **Paste key from clipboard** action, and automatic persistence after a successful connection test. No app can auto-read keys from another Android app.
+- Offline commands remain available when the network probe is offline; status/network commands no longer claim a connection is active without checking.

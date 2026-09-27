@@ -15,6 +15,7 @@ export type ProviderDefinition = {
   model: string;
   keyHint: string;
   keyUrl: string;
+  freeTierNote: string;
 };
 
 export type AssistantConfig = {
@@ -37,6 +38,7 @@ export const PROVIDERS: ProviderDefinition[] = [
     model: 'gpt-4o-mini',
     keyHint: 'sk-proj-…',
     keyUrl: 'https://platform.openai.com/api-keys',
+    freeTierNote: 'Free credits and API access vary by account; check the official billing page.',
   },
   {
     id: 'gemini',
@@ -46,6 +48,7 @@ export const PROVIDERS: ProviderDefinition[] = [
     model: CURRENT_GEMINI_MODEL,
     keyHint: 'AIza…',
     keyUrl: 'https://aistudio.google.com/app/apikey',
+    freeTierNote: 'Google AI Studio may offer limited free usage; check current quota and restrictions.',
   },
   {
     id: 'anthropic',
@@ -55,6 +58,7 @@ export const PROVIDERS: ProviderDefinition[] = [
     model: 'claude-3-5-haiku-latest',
     keyHint: 'sk-ant-…',
     keyUrl: 'https://console.anthropic.com/settings/keys',
+    freeTierNote: 'API access and free credits vary by account; check the official usage terms.',
   },
   {
     id: 'custom',
@@ -64,6 +68,7 @@ export const PROVIDERS: ProviderDefinition[] = [
     model: 'your-model',
     keyHint: 'Provider key',
     keyUrl: 'https://platform.openai.com/api-keys',
+    freeTierNote: 'Free access depends on the custom provider you choose.',
   },
 ];
 

@@ -199,10 +199,17 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       };
       if (!candidate.apiKey.trim()) return { ok: false, message: 'Add a provider key before testing the connection.' };
       await requestAssistantReply(candidate, [], 'Reply with exactly: Connection OK.');
-      if (candidate.providerId === 'gemini' && detectedModel) await updateApiConfig({ providerId: 'gemini', model: detectedModel });
+      await updateApiConfig({
+        providerId: candidate.providerId,
+        apiKey: candidate.apiKey,
+        apiKeys: candidateApiKeys,
+        endpoint: candidate.endpoint,
+        model: candidate.model,
+        agentId: candidate.agentId,
+      });
       return { ok: true, message: `${getProvider(candidate.providerId).name} is connected using ${candidate.model}.` };
     } catch (error) {
-      return { ok: false, message: formatConnectionError(error) };
+      return { ok: false, message: formatConnectionError(error, getProvider(candidateProviderId).name) };
     }
   }, [apiConfig, updateApiConfig]);
 
@@ -217,7 +224,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       }]);
       return { ok: Boolean(reply.value), message: 'Jarvis secure backup is online and ready.' };
     } catch (error) {
-      return { ok: false, message: formatConnectionError(error) };
+      return { ok: false, message: formatConnectionError(error, 'Jarvis secure backup') };
     }
   }, [serverAssistant]);
 
@@ -273,11 +280,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           : result.value);
       } catch (error) {
         console.error('All Jarvis AI routes failed:', error);
-        addMessage('assistant', formatConnectionError(error));
+        addMessage('assistant', formatConnectionError(error, getProvider(apiConfig.providerId).name));
       }
     } catch (error) {
       console.error('Failed to send message:', error);
-      addMessage('assistant', formatConnectionError(error));
+      addMessage('assistant', formatConnectionError(error, getProvider(apiConfig.providerId).name));
     } finally {
       setJarvisState('idle');
       setIsLoading(false);
@@ -456,13 +463,13 @@ function extractAnthropicText(payload: unknown) {
   throw new Error('The provider returned no assistant text. Check the model name and API key.');
 }
 
-function formatConnectionError(error: unknown) {
+function formatConnectionError(error: unknown, providerName = 'the provider') {
   if (error instanceof TypeError) {
     return 'I could not reach that provider. Check your internet connection, endpoint, and provider selection in Settings.';
   }
   const message = error instanceof Error ? error.message : 'Unknown provider error.';
   if (/API key|api key|permission|unauthorized|forbidden|401|403/i.test(message)) {
-    return `Gemini rejected this key. In Google AI Studio, open the key details and make sure it is an authorization key (or a restricted key with the Generative Language API enabled), then create a fresh key and try again. Details: ${message}`;
+    return `${providerName} rejected this key. Open the official key page, confirm the key is active and allowed for this API, then create a fresh key and try again. Details: ${message}`;
   }
   return `I could not complete that request. ${message}`;
 }
@@ -497,7 +504,7 @@ async function checkOfflineCommands(input: string, rememberNote: (note: string) 
   }
 
   if (lowerInput.includes('status report') || lowerInput.includes('system status')) {
-    return `📊 **System Status Report**\n\nTime: ${now.toLocaleTimeString()}\nDate: ${now.toLocaleDateString()}\nPlatform: ${Platform.OS === 'android' ? 'Android' : 'iOS'}\nStatus: All systems operational\nNetwork: Connected and stable`;
+    return `📊 **System Status Report**\n\nTime: ${now.toLocaleTimeString()}\nDate: ${now.toLocaleDateString()}\nPlatform: ${Platform.OS === 'android' ? 'Android' : 'iOS'}\nStatus: Offline commands available\nNetwork: See the live indicator in the chat header`;
   }
   if (lowerInput.includes('what time') || lowerInput.includes('current time')) {
     return `⏰ The current time is **${now.toLocaleTimeString()}** on ${now.toLocaleDateString()}.`;
@@ -509,7 +516,7 @@ async function checkOfflineCommands(input: string, rememberNote: (note: string) 
     return '🔋 **Battery Status**\n\nEstimated battery level: Healthy\nCharging: Not connected\nTemperature: Normal\nHealth: Good';
   }
   if (lowerInput.includes('network') || lowerInput.includes('wifi') || lowerInput.includes('connection')) {
-    return '📡 **Network Status**\n\nConnection: Active\nType: WiFi/Cellular\nSignal Strength: Strong\nLatency: Good\nNo connectivity issues detected';
+    return '📡 **Network Status**\n\nThe live connection indicator in the chat header shows whether Jarvis can reach the internet. Offline commands continue to work if the indicator is red.';
   }
   if (lowerInput.includes('storage') || lowerInput.includes('disk space')) {
     return '💾 **Storage Information**\n\nTotal Storage: Adequate\nAvailable Space: Good\nUsed: Moderate\nRecommendation: Consider clearing old files if needed';

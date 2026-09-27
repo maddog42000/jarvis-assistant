@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Linking, Platform, Pressable, ScrollView, Swi
 import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
+import * as Clipboard from 'expo-clipboard';
 
 import { ScreenContainer } from '@/components/screen-container';
 import { ConnectionResultCard } from '@/components/connection-result-card';
@@ -16,7 +17,7 @@ import { useMemory } from '@/lib/memory-context';
 export default function SettingsScreen() {
   const { apiConfig, hasApiKey, updateApiConfig, testConnection, testServerAssistant, clearMessages } = useChat();
   const { resetOnboarding } = useOnboarding();
-  const { voices, settings: ttsSettings, isLoadingVoices, updateSettings: updateTtsSettings } = useTts();
+  const { voices, settings: ttsSettings, isLoadingVoices, speak, updateSettings: updateTtsSettings } = useTts();
   const { clearMemory } = useMemory();
   const [providerId, setProviderId] = useState<ProviderId>(apiConfig.providerId);
   const [apiKey, setApiKey] = useState(apiConfig.apiKey);
@@ -41,6 +42,11 @@ export default function SettingsScreen() {
   const recommendedVoices = useMemo(() => voices.filter((voice) => voice.language.toLowerCase().startsWith('en')).slice(0, 8), [voices]);
   const selectedAgent = apiConfig.agents.find((agent) => agent.id === agentId) ?? apiConfig.agents[0];
 
+  const adjustVoice = (field: 'pitch' | 'rate', amount: number) => {
+    const next = Math.max(0.5, Math.min(1.5, Number((ttsSettings[field] + amount).toFixed(2))));
+    void updateTtsSettings({ [field]: next });
+  };
+
   const selectProvider = (nextProviderId: ProviderId) => {
     const nextProvider = getProvider(nextProviderId);
     setProviderId(nextProviderId);
@@ -50,6 +56,21 @@ export default function SettingsScreen() {
     setConnectionState('idle');
     setConnectionMessage('');
     setSaveState('idle');
+  };
+
+  const pasteApiKey = async () => {
+    try {
+      const clipboardText = (await Clipboard.getStringAsync()).trim();
+      if (!clipboardText) {
+        Alert.alert('Clipboard is empty', 'Copy the provider key first, then tap Paste key.');
+        return;
+      }
+      setApiKey(clipboardText);
+      setConnectionState('idle');
+      setConnectionMessage('Key pasted. Tap Auto setup & test to validate and save it.');
+    } catch {
+      Alert.alert('Could not read clipboard', 'Paste the key directly into the field instead.');
+    }
   };
 
   const saveConnection = async () => {
@@ -184,6 +205,7 @@ export default function SettingsScreen() {
               <MaterialIcons name="open-in-new" size={15} color="#18d5ff" />
               <Text className="text-xs font-semibold text-primary">Open {provider.name} key page</Text>
             </Pressable>
+            <Text className="text-[11px] text-muted mt-2">Free-tier note: {provider.freeTierNote}</Text>
           </View>
 
           <Text className="text-sm font-semibold text-foreground mt-4 mb-2">3. Paste the key</Text>
@@ -193,6 +215,10 @@ export default function SettingsScreen() {
               <MaterialIcons name={showKey ? 'visibility' : 'visibility-off'} size={20} color="#8a92a0" />
             </Pressable>
           </View>
+          <Pressable onPress={() => void pasteApiKey()} style={({ pressed }) => [{ opacity: pressed ? 0.75 : 1 }]} className="self-start flex-row items-center gap-2 mt-2">
+            <MaterialIcons name="content-paste" size={16} color="#18d5ff" />
+            <Text className="text-xs font-semibold text-primary">Paste key from clipboard</Text>
+          </Pressable>
           <Text className="text-xs text-muted mt-2">Saved separately for {provider.name}. You can switch providers without losing another provider’s key.</Text>
 
           <Text className="text-sm font-semibold text-foreground mt-4 mb-2">4. Automatic setup</Text>
@@ -279,6 +305,23 @@ export default function SettingsScreen() {
               </Pressable>
             ))}
           </View>
+          <View className="gap-2 mt-4">
+            {[
+              { field: 'pitch' as const, label: 'Pitch', value: ttsSettings.pitch, step: 0.05 },
+              { field: 'rate' as const, label: 'Speed', value: ttsSettings.rate, step: 0.05 },
+            ].map((control) => (
+              <View key={control.field} className="flex-row items-center gap-2">
+                <Text className="text-xs font-semibold text-foreground w-14">{control.label}</Text>
+                <Pressable onPress={() => adjustVoice(control.field, -control.step)} className="w-9 h-9 rounded-lg bg-background border border-border items-center justify-center"><Text className="text-lg text-foreground">−</Text></Pressable>
+                <View className="flex-1 h-9 rounded-lg bg-background border border-border items-center justify-center"><Text className="text-xs text-foreground">{control.value.toFixed(2)}</Text></View>
+                <Pressable onPress={() => adjustVoice(control.field, control.step)} className="w-9 h-9 rounded-lg bg-background border border-border items-center justify-center"><Text className="text-lg text-foreground">+</Text></Pressable>
+              </View>
+            ))}
+          </View>
+          <Pressable onPress={() => speak('Hi, I’m Jarvis. This is a preview of your selected voice.')} style={({ pressed }) => [{ opacity: pressed ? 0.75 : 1 }]} className="mt-3 border border-primary rounded-xl py-3 flex-row items-center justify-center gap-2">
+            <MaterialIcons name="play-arrow" size={18} color="#18d5ff" />
+            <Text className="font-bold text-primary">Preview selected voice</Text>
+          </Pressable>
           <Text className="text-sm font-semibold text-foreground mt-4">Language / accent pack</Text>
           <Text className="text-xs text-muted mt-1">These options only work when the matching voice pack is installed on Android.</Text>
           <View className="flex-row gap-2 mt-3">

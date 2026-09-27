@@ -20,10 +20,12 @@ import { ScreenContainer } from '@/components/screen-container';
 import { CommandCarousel, SpeechPlayer } from '@/components/voice-and-command-widgets';
 import { useChat } from '@/lib/chat-context';
 import { useTts } from '@/lib/tts-context';
+import { useConnectionStatus } from '@/lib/connection-status';
 
 export default function ChatScreen() {
   const { messages, isLoading, jarvisState, sendMessage } = useChat();
   const { speak, settings: ttsSettings } = useTts();
+  const { status: connectionStatus, checkConnection } = useConnectionStatus();
   const [inputText, setInputText] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const flatListRef = useRef<FlatList>(null);
@@ -88,10 +90,12 @@ export default function ChatScreen() {
             <Text className="text-2xl font-bold text-foreground">Jarvis</Text>
             <Text className="text-xs text-muted mt-0.5">Offline first · secure AI backup</Text>
           </View>
-          <View className="flex-row items-center gap-1">
-            <View className="w-2 h-2 rounded-full bg-success" />
-            <Text className="text-xs text-success">Ready</Text>
-          </View>
+          <Pressable onPress={() => void checkConnection()} className="flex-row items-center gap-1" accessibilityLabel="Check connection status">
+            <View className={`w-2 h-2 rounded-full ${connectionStatus === 'online' ? 'bg-success' : connectionStatus === 'offline' ? 'bg-error' : 'bg-warning'}`} />
+            <Text className={`text-xs ${connectionStatus === 'online' ? 'text-success' : connectionStatus === 'offline' ? 'text-error' : 'text-warning'}`}>
+              {connectionStatus === 'online' ? 'Online' : connectionStatus === 'offline' ? 'Offline' : 'Checking'}
+            </Text>
+          </Pressable>
         </View>
 
         <View className="flex-1">
