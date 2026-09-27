@@ -168,7 +168,7 @@ export default function ChatScreen() {
               <MaterialIcons name="arrow-upward" size={22} color="#061018" />
             </Pressable>
           </View>
-          <Text className="text-[11px] text-muted text-center mt-2">Offline commands work without a key · AI backup stays in Jarvis</Text>
+          <Text className="text-[11px] text-muted text-center mt-2">Offline commands work without a key · Recent chat is saved on this device</Text>
         </View>
       </ScreenContainer>
     </KeyboardAvoidingView>

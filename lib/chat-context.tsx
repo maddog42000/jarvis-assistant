@@ -16,6 +16,7 @@ import { useMemory } from '@/lib/memory-context';
 import { trpc } from '@/lib/trpc';
 import { buildServerAssistantInput, getServerFallbackNotice } from '@/lib/server-assistant';
 import { runFallbackChain } from '@/lib/fallback-routing';
+import { normalizeCachedHistory, serializeCachedHistory, limitCachedHistory } from '@/lib/local-history';
 
 export interface Message {
   id: string;
@@ -101,6 +102,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const { memory, rememberNote } = useMemory();
   const serverAssistant = trpc.assistant.complete.useMutation();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [jarvisState, setJarvisState] = useState<'idle' | 'listening' | 'thinking' | 'speaking'>('idle');
@@ -111,9 +113,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const loadChatHistory = useCallback(async () => {
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      if (stored) setMessages(JSON.parse(stored));
+      if (stored) setMessages(normalizeCachedHistory(JSON.parse(stored)) as Message[]);
     } catch (error) {
       console.error('Failed to load chat history:', error);
+    } finally {
+      setHistoryLoaded(true);
     }
   }, []);
 
@@ -139,7 +143,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       timestamp: Date.now(),
       isOfflineCommand,
     };
-    setMessages((previous) => [...previous, newMessage]);
+    setMessages((previous) => limitCachedHistory([...previous, newMessage]));
   }, []);
 
   const clearMessages = useCallback(async () => {
@@ -292,12 +296,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   }, [addMessage, apiConfig, messages, memory, rememberNote, serverAssistant]);
 
   useEffect(() => {
-    if (messages.length > 0) {
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(messages)).catch((error) => {
-        console.error('Failed to save messages:', error);
-      });
-    }
-  }, [messages]);
+    if (!historyLoaded) return;
+    AsyncStorage.setItem(STORAGE_KEY, serializeCachedHistory(messages)).catch((error) => {
+      console.error('Failed to save local chat history:', error);
+    });
+  }, [historyLoaded, messages]);
 
   return (
     <ChatContext.Provider
@@ -543,13 +546,13 @@ async function checkOfflineCommands(input: string, rememberNote: (note: string) 
     return '📸 **Screen Analysis**\n\nCurrent interface analyzed. I can see your device is functioning normally. Ready to help with any questions!';
   }
   if (lowerInput.includes('help') || lowerInput.includes('what can you do')) {
-    return '🤖 **Jarvis Capabilities**\n\n**Offline Commands:**\n• Status reports & system info\n• Time, date, and reminders\n• Battery & network status\n• Device storage info\n• Quick actions & utilities\n\n**With a provider key:**\n• Full AI conversations\n• Complex questions & analysis\n• Creative writing & coding help\n\nTry asking me anything!';
+    return '🤖 **Jarvis Capabilities**\n\n**Offline Commands:**\n• Time, date, status, battery, network, and storage\n• Reminders, alarms, timers, focus, and breathing\n• Good morning, motivation, jokes, quotes, coin flips, dice, and random numbers\n• Privacy and local-history guidance\n\n**Local cache:** Recent chat stays on this device for offline reopening.\n\n**With a provider key:**\n• Full AI conversations\n• Complex questions & analysis\n• Creative writing & coding help\n\nTry asking me anything!';
   }
   if (lowerInput.includes('version') || lowerInput.includes('about')) {
     return `ℹ️ **About Jarvis**\n\nJarvis v1.0.5\nA sophisticated AI assistant with offline capabilities and beautiful animations.\n\nDeveloped with React Native & Expo\nPlatform: ${Platform.OS === 'android' ? 'Android' : 'iOS'}`;
   }
   if (lowerInput.includes('features') || lowerInput.includes('commands')) {
-    return '✨ **Available Features**\n\n📊 System monitoring\n🎯 Offline commands (20+)\n🤖 Multi-provider AI chat\n💬 Message reactions\n⚙️ Customizable settings\n🎨 Beautiful dark theme\n📱 Responsive design';
+    return '✨ **Available Features**\n\n📊 Offline device-style commands\n🎯 Voice-friendly quick commands (30+)\n🗂️ Local conversation history cache\n🤖 Multi-provider AI chat\n💬 Message reactions\n⚙️ Customizable settings\n🎨 Beautiful dark theme\n📱 Responsive design';
   }
   if (lowerInput.includes('joke') || lowerInput.includes('tell me a joke')) {
     const jokes = [
@@ -568,6 +571,39 @@ async function checkOfflineCommands(input: string, rememberNote: (note: string) 
       '“The future belongs to those who believe in the beauty of their dreams.” — Eleanor Roosevelt',
     ];
     return `💡 **Daily Inspiration**\n\n${quotes[Math.floor(Math.random() * quotes.length)]}`;
+  }
+  if (lowerInput.includes('good morning')) {
+    return `☀️ **Good morning**\n\nYou’re all set for a fresh start. Today is ${now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}. Pick one small thing to make progress on first.`;
+  }
+  if (lowerInput.includes('good night') || lowerInput.includes(' bedtime')) {
+    return '🌙 **Good night**\n\nYou did enough for today. Rest well, and I’ll be here when you’re ready to start again.';
+  }
+  if (lowerInput.includes('motivate') || lowerInput.includes('encourage me')) {
+    return '✨ **You’ve got this**\n\nMake the next step tiny: choose one task, set a short timer, and begin before you feel completely ready.';
+  }
+  if (lowerInput.includes('breath') || lowerInput.includes('calm me') || lowerInput.includes('relax')) {
+    return '🌬️ **One-minute breathing reset**\n\nInhale gently for 4 seconds. Hold for 2. Exhale for 6. Repeat five times and let your shoulders drop.';
+  }
+  if (lowerInput.includes('focus mode') || lowerInput === 'focus' || lowerInput.includes('help me focus')) {
+    return '🎯 **Focus mode**\n\nChoose one task, silence distractions, and work for 10 minutes. When the timer ends, decide whether to continue or reset.';
+  }
+  if (lowerInput.includes('flip a coin') || lowerInput.includes('coin toss')) {
+    return `🪙 **Coin flip**\n\n${Math.random() < 0.5 ? 'Heads' : 'Tails'}.`;
+  }
+  if (lowerInput.includes('roll a dice') || lowerInput.includes('roll the dice') || lowerInput.includes('roll a die')) {
+    return `🎲 **Dice roll**\n\nYou rolled **${Math.floor(Math.random() * 6) + 1}**.`;
+  }
+  if (lowerInput.includes('random number') || lowerInput.includes('pick a number')) {
+    return `🔀 **Random number**\n\nYour number is **${Math.floor(Math.random() * 100) + 1}**.`;
+  }
+  if (lowerInput.includes('privacy status') || lowerInput.includes('is my data private')) {
+    return '🔒 **Privacy status**\n\nYour chat history and provider settings are cached locally on this device. API keys are not bundled with Jarvis. Online questions use your selected provider or the secure Jarvis backup when available.';
+  }
+  if (lowerInput.includes('local history') || lowerInput.includes('chat history') || lowerInput.includes('what did we talk about')) {
+    return '🗂️ **Local history**\n\nRecent messages are saved on this device so you can reopen the conversation without internet. Use Settings → Clear chat history to remove them.';
+  }
+  if (lowerInput.includes('repeat that') || lowerInput.includes('say that again') || lowerInput.includes('repeat your last')) {
+    return '🔁 **Repeat**\n\nUse the replay button in the speech player to hear the last Jarvis response again.';
   }
   if (lowerInput.includes('calculate') || lowerInput.includes('math')) {
     return '🧮 **Calculator**\n\nI can help with basic math! Try asking me to calculate something specific, like “What is 15 + 27?” or “Calculate 50% of 200”.';

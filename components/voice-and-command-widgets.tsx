@@ -21,6 +21,16 @@ export const PRESET_COMMANDS = [
   { label: 'About', command: 'about jarvis', icon: 'info-outline' as const, color: '#ff8a65' },
   { label: 'Overwatch', command: 'overwatch', icon: 'visibility' as const, color: '#49d17d' },
   { label: 'Stealth', command: 'stealth mode', icon: 'visibility-off' as const, color: '#18d5ff' },
+  { label: 'Good morning', command: 'good morning', icon: 'wb-twilight' as const, color: '#f5b942' },
+  { label: 'Motivate me', command: 'motivate me', icon: 'trending-up' as const, color: '#49d17d' },
+  { label: 'Breathe', command: 'breathing exercise', icon: 'air' as const, color: '#18d5ff' },
+  { label: 'Focus', command: 'focus mode', icon: 'center-focus-strong' as const, color: '#9c8cff' },
+  { label: 'Coin flip', command: 'flip a coin', icon: 'casino' as const, color: '#ff8a65' },
+  { label: 'Roll dice', command: 'roll a dice', icon: 'casino' as const, color: '#f5b942' },
+  { label: 'Random number', command: 'pick a random number', icon: 'shuffle' as const, color: '#18d5ff' },
+  { label: 'Privacy', command: 'privacy status', icon: 'security' as const, color: '#49d17d' },
+  { label: 'History', command: 'local history', icon: 'history' as const, color: '#9c8cff' },
+  { label: 'Repeat', command: 'repeat that', icon: 'replay' as const, color: '#ff8a65' },
 ];
 
 export function CommandCarousel({ onSelect }: { onSelect: (command: string) => void }) {

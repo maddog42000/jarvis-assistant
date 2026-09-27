@@ -64,3 +64,11 @@ Android cannot read API keys or answers from other installed apps such as Gemini
 - Settings voice controls now include installed voice selection, Warm/Natural/Bright presets, pitch and speed +/- adjustments, and a voice preview button.
 - Provider setup includes official key-page links, current free-tier guidance, a user-initiated **Paste key from clipboard** action, and automatic persistence after a successful connection test. No app can auto-read keys from another Android app.
 - Offline commands remain available when the network probe is offline; status/network commands no longer claim a connection is active without checking.
+
+## Offline command and local history expansion
+
+Jarvis now recognizes additional voice-friendly phrases while offline, including good morning/night, motivation, breathing reset, focus mode, coin flip, dice roll, random number, privacy status, local history, and repeat-that guidance. The quick-command carousel exposes these actions as well.
+
+Chat history is validated and bounded to the newest 100 messages before being written to AsyncStorage. Malformed cached entries are ignored, missing IDs/timestamps are repaired, and the cache is written after history loads so startup cannot overwrite an existing cache with an empty state. The chat footer tells users that recent messages are saved on the device.
+
+Security reminder: never commit or send API keys in chat, source files, screenshots, or public issues. Any key pasted into a conversation should be revoked and replaced.
