@@ -9,6 +9,23 @@ import { z } from "zod";
 const proxyWindows = new Map<string, { startedAt: number; count: number }>();
 const PROXY_WINDOW_MS = 10 * 60 * 1000;
 const PROXY_MAX_REQUESTS = 20;
+const PROXY_TIMEOUT_MS = 20000;
+
+async function invokeProxyWithTimeout(input: Parameters<typeof invokeLLM>[0]) {
+  return new Promise<Awaited<ReturnType<typeof invokeLLM>>>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new TRPCError({ code: 'TIMEOUT', message: 'The secure server assistant timed out. Please retry.' })), PROXY_TIMEOUT_MS);
+    invokeLLM(input).then(
+      (result) => {
+        clearTimeout(timer);
+        resolve(result);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
 
 function enforceProxyLimit(request: { ip?: string; headers: Record<string, string | string[] | undefined> }) {
   const forwarded = request.headers['x-forwarded-for'];
@@ -51,7 +68,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         enforceProxyLimit(ctx.req);
-        const result = await invokeLLM({
+        const result = await invokeProxyWithTimeout({
           messages: [
             { role: "system", content: input.systemPrompt },
             ...input.messages,

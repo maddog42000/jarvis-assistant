@@ -14,7 +14,7 @@ import { useTts } from '@/lib/tts-context';
 import { useMemory } from '@/lib/memory-context';
 
 export default function SettingsScreen() {
-  const { apiConfig, hasApiKey, updateApiConfig, testConnection, clearMessages } = useChat();
+  const { apiConfig, hasApiKey, updateApiConfig, testConnection, testServerAssistant, clearMessages } = useChat();
   const { resetOnboarding } = useOnboarding();
   const { voices, settings: ttsSettings, isLoadingVoices, updateSettings: updateTtsSettings } = useTts();
   const { clearMemory } = useMemory();
@@ -117,6 +117,16 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleTestServerAssistant = async () => {
+    if (connectionState === 'testing' || saveState === 'saving') return;
+    setConnectionState('testing');
+    setSaveState('idle');
+    setConnectionMessage('Checking Jarvis secure backup online…');
+    const result = await testServerAssistant();
+    setConnectionState(result.ok ? 'success' : 'error');
+    setConnectionMessage(result.message);
+  };
+
   const confirmReset = () => {
     Alert.alert('Restart onboarding?', 'The setup walkthrough will open immediately. Your saved provider settings will stay on this device.', [
       { text: 'Cancel', style: 'cancel' },
@@ -214,6 +224,11 @@ export default function SettingsScreen() {
             message={connectionMessage}
             onRetry={() => void handleTestConnection()}
           />
+          <Pressable onPress={() => void handleTestServerAssistant()} disabled={connectionState === 'testing' || saveState === 'saving'} style={({ pressed }) => [{ opacity: pressed ? 0.75 : 1 }]} className="mt-3 border border-success/50 rounded-xl py-3 flex-row items-center justify-center gap-2">
+            <MaterialIcons name="cloud-done" size={18} color="#49d17d" />
+            <Text className="font-bold text-success">Test Jarvis online backup</Text>
+          </Pressable>
+          <Text className="text-[11px] text-muted text-center mt-2">This verifies Jarvis can answer online without opening Gemini, ChatGPT, or Chrome.</Text>
         </View>
 
         <SectionTitle icon="smart-toy" title="Agent profile" subtitle="The selected profile controls tone and instructions" />

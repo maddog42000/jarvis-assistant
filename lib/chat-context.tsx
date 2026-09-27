@@ -15,6 +15,7 @@ import {
 import { useMemory } from '@/lib/memory-context';
 import { trpc } from '@/lib/trpc';
 import { buildServerAssistantInput, getServerFallbackNotice } from '@/lib/server-assistant';
+import { runFallbackChain } from '@/lib/fallback-routing';
 
 export interface Message {
   id: string;
@@ -42,6 +43,7 @@ export interface ChatContextType {
   setJarvisState: (state: 'idle' | 'listening' | 'thinking' | 'speaking') => void;
   updateApiConfig: (config: Partial<ApiConfig>) => Promise<void>;
   testConnection: (override?: Partial<ApiConfig>) => Promise<{ ok: boolean; message: string }>;
+  testServerAssistant: () => Promise<{ ok: boolean; message: string }>;
   sendMessage: (content: string) => Promise<void>;
   loadChatHistory: () => Promise<void>;
 }
@@ -204,6 +206,21 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     }
   }, [apiConfig, updateApiConfig]);
 
+  const testServerAssistant = useCallback(async () => {
+    try {
+      const reply = await runFallbackChain([{
+        id: 'Jarvis secure backup',
+        run: async () => (await serverAssistant.mutateAsync(buildServerAssistantInput(
+          DEFAULT_AGENTS[0].systemPrompt,
+          [{ role: 'user', content: 'Reply with exactly: Secure backup online.' }],
+        ))).content,
+      }]);
+      return { ok: Boolean(reply.value), message: 'Jarvis secure backup is online and ready.' };
+    } catch (error) {
+      return { ok: false, message: formatConnectionError(error) };
+    }
+  }, [serverAssistant]);
+
   const sendMessage = useCallback(async (content: string) => {
     addMessage('user', content);
     setJarvisState('thinking');
@@ -219,12 +236,15 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       if (!apiConfig.apiKey.trim()) {
         try {
           const agent = getAgent(apiConfig);
-          const proxyReply = await serverAssistant.mutateAsync(buildServerAssistantInput(
-            agent.systemPrompt,
-            [...messages.slice(-10), { role: 'user' as const, content }],
-            memory,
-          ));
-          addMessage('assistant', proxyReply.content);
+          const result = await runFallbackChain([{
+            id: 'Jarvis secure backup',
+            run: async () => (await serverAssistant.mutateAsync(buildServerAssistantInput(
+              agent.systemPrompt,
+              [...messages.slice(-10), { role: 'user' as const, content }],
+              memory,
+            ))).content,
+          }]);
+          addMessage('assistant', result.value);
         } catch (error) {
           console.error('Server assistant proxy unavailable:', error);
           addMessage('assistant', getOfflineFallbackMessage());
@@ -233,23 +253,27 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const assistantMessage = await requestAssistantReply(apiConfig, messages, content, memory);
-        addMessage('assistant', assistantMessage);
-      } catch (primaryError) {
-        // Keep the user in Jarvis: quietly retry through the server-side backup AI
-        // instead of opening Chrome or handing the conversation to another app.
-        try {
-          const agent = getAgent(apiConfig);
-          const proxyReply = await serverAssistant.mutateAsync(buildServerAssistantInput(
-            agent.systemPrompt,
-            [...messages.slice(-10), { role: 'user' as const, content }],
-            memory,
-          ));
-          addMessage('assistant', `${getServerFallbackNotice(getProvider(apiConfig.providerId).name)}\n\n${proxyReply.content}`);
-        } catch (fallbackError) {
-          console.error('Both provider and server assistant failed:', { primaryError, fallbackError });
-          addMessage('assistant', formatConnectionError(primaryError));
-        }
+        const agent = getAgent(apiConfig);
+        const result = await runFallbackChain([
+          {
+            id: getProvider(apiConfig.providerId).name,
+            run: () => requestAssistantReply(apiConfig, messages, content, memory),
+          },
+          {
+            id: 'Jarvis secure backup',
+            run: async () => (await serverAssistant.mutateAsync(buildServerAssistantInput(
+              agent.systemPrompt,
+              [...messages.slice(-10), { role: 'user' as const, content }],
+              memory,
+            ))).content,
+          },
+        ]);
+        addMessage('assistant', result.used === 'Jarvis secure backup'
+          ? `${getServerFallbackNotice(getProvider(apiConfig.providerId).name)}\n\n${result.value}`
+          : result.value);
+      } catch (error) {
+        console.error('All Jarvis AI routes failed:', error);
+        addMessage('assistant', formatConnectionError(error));
       }
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -284,6 +308,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         setJarvisState,
         updateApiConfig,
         testConnection,
+        testServerAssistant,
         sendMessage,
         loadChatHistory,
       }}
@@ -317,7 +342,7 @@ async function requestAssistantReply(config: RequestConfig, history: Message[], 
   if (config.providerId === 'gemini') {
     const model = normalizeGeminiModel(config.model);
     const endpoint = `${normalizeEndpoint(config.endpoint)}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(config.apiKey)}`;
-    const response = await fetch(endpoint, {
+    const response = await fetchWithTimeout(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -331,7 +356,7 @@ async function requestAssistantReply(config: RequestConfig, history: Message[], 
 
   if (config.providerId === 'anthropic') {
     const endpoint = `${normalizeEndpoint(config.endpoint)}/messages`;
-    const response = await fetch(endpoint, {
+    const response = await fetchWithTimeout(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -352,7 +377,7 @@ async function requestAssistantReply(config: RequestConfig, history: Message[], 
   const endpoint = normalizeEndpoint(config.endpoint).endsWith('/chat/completions')
     ? normalizeEndpoint(config.endpoint)
     : `${normalizeEndpoint(config.endpoint)}/chat/completions`;
-  const response = await fetch(endpoint, {
+  const response = await fetchWithTimeout(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -381,6 +406,21 @@ async function readResponseOrThrow(response: Response, providerName: string) {
     throw new Error(`${providerName} connection failed: ${message}`);
   }
   return payload;
+}
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('The request timed out after 15 seconds.');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function extractErrorText(payload: unknown): string | null {
@@ -429,7 +469,7 @@ function formatConnectionError(error: unknown) {
 
 async function discoverGeminiModel(apiKey: string, endpoint: string) {
   if (!apiKey.trim()) throw new Error('Add a Gemini API key before automatic setup.');
-  const response = await fetch(`${normalizeEndpoint(endpoint || getProvider('gemini').endpoint)}/models?key=${encodeURIComponent(apiKey)}&pageSize=100`);
+  const response = await fetchWithTimeout(`${normalizeEndpoint(endpoint || getProvider('gemini').endpoint)}/models?key=${encodeURIComponent(apiKey)}&pageSize=100`);
   const payload = await readResponseOrThrow(response, 'Gemini model discovery');
   const models = (payload as { models?: Array<{ name?: string; supportedGenerationMethods?: string[] }> }).models ?? [];
   const supported = models

@@ -51,3 +51,9 @@ When no personal provider key is configured, non-offline chat attempts the publi
 The server-side LLM environment variables were present in the active deployment environment and were verified with a live health request plus a live `assistant.complete` smoke test. The proxy returned assistant text from the configured built-in model. Do not print or commit the credential while debugging.
 
 Chat now keeps users inside Jarvis in both cases: with no personal key it uses the secure server assistant directly; when a configured Gemini/OpenAI/Anthropic request fails, it automatically retries through the same server assistant and labels the response as a quiet backup. The prior **Open Google AI in Chrome** handoff was removed from the chat UI. No browser or home-screen widget is opened automatically.
+
+## Fallback routing diagnostics
+
+The app now uses `lib/fallback-routing.ts` for timeout-safe provider failover. Direct provider requests abort after 15 seconds; the server proxy fails after 20 seconds. Settings includes **Test Jarvis online backup**, which verifies the server route without requiring a personal key. Run `pnpm test:fallback` to simulate provider errors and a hung route. See `docs/fallback-routing.md` for the route contract and troubleshooting steps.
+
+Android cannot read API keys or answers from other installed apps such as Gemini, ChatGPT, Chrome, or home-screen widgets. The supported paths are: paste a key into Jarvis Settings, use Gemini automatic model discovery, or use the server-side Jarvis backup. No hidden app scraping or background control was added.
