@@ -72,3 +72,9 @@ Jarvis now recognizes additional voice-friendly phrases while offline, including
 Chat history is validated and bounded to the newest 100 messages before being written to AsyncStorage. Malformed cached entries are ignored, missing IDs/timestamps are repaired, and the cache is written after history loads so startup cannot overwrite an existing cache with an empty state. The chat footer tells users that recent messages are saved on the device.
 
 Security reminder: never commit or send API keys in chat, source files, screenshots, or public issues. Any key pasted into a conversation should be revoked and replaced.
+
+## Provider status and Gemini 404 fix
+
+The Chat header now shows two separate states: internet reachability and whether a provider key is merely saved. A green internet indicator no longer claims that AI requests are ready. Settings shows an animated result card with live stages such as contacting the provider, discovering a model, sending a small test request, and saving verified setup.
+
+Gemini chat requests now retry once with a freshly discovered model when a stale saved model produces a 404. Gemini 404 errors also explain that the model may not be available to the key and show the expected `https://generativelanguage.googleapis.com/v1beta` endpoint.

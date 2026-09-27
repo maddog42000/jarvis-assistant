@@ -23,7 +23,7 @@ import { useTts } from '@/lib/tts-context';
 import { useConnectionStatus } from '@/lib/connection-status';
 
 export default function ChatScreen() {
-  const { messages, isLoading, jarvisState, sendMessage } = useChat();
+  const { messages, isLoading, jarvisState, sendMessage, hasApiKey, apiConfig } = useChat();
   const { speak, settings: ttsSettings } = useTts();
   const { status: connectionStatus, checkConnection } = useConnectionStatus();
   const [inputText, setInputText] = useState('');
@@ -90,12 +90,20 @@ export default function ChatScreen() {
             <Text className="text-2xl font-bold text-foreground">Jarvis</Text>
             <Text className="text-xs text-muted mt-0.5">Offline first · secure AI backup</Text>
           </View>
-          <Pressable onPress={() => void checkConnection()} className="flex-row items-center gap-1" accessibilityLabel="Check connection status">
-            <View className={`w-2 h-2 rounded-full ${connectionStatus === 'online' ? 'bg-success' : connectionStatus === 'offline' ? 'bg-error' : 'bg-warning'}`} />
-            <Text className={`text-xs ${connectionStatus === 'online' ? 'text-success' : connectionStatus === 'offline' ? 'text-error' : 'text-warning'}`}>
-              {connectionStatus === 'online' ? 'Online' : connectionStatus === 'offline' ? 'Offline' : 'Checking'}
-            </Text>
-          </Pressable>
+          <View className="items-end gap-1">
+            <Pressable onPress={() => void checkConnection()} className="flex-row items-center gap-1" accessibilityLabel="Check internet status">
+              <View className={`w-2 h-2 rounded-full ${connectionStatus === 'online' ? 'bg-success' : connectionStatus === 'offline' ? 'bg-error' : 'bg-warning'}`} />
+              <Text className={`text-xs ${connectionStatus === 'online' ? 'text-success' : connectionStatus === 'offline' ? 'text-error' : 'text-warning'}`}>
+                Internet {connectionStatus === 'online' ? 'online' : connectionStatus === 'offline' ? 'offline' : 'checking'}
+              </Text>
+            </Pressable>
+            <View className="flex-row items-center gap-1">
+              <View className={`w-2 h-2 rounded-full ${hasApiKey ? 'bg-warning' : 'bg-primary'}`} />
+              <Text className={`text-[11px] ${hasApiKey ? 'text-warning' : 'text-primary'}`}>
+                {hasApiKey ? `${apiConfig.providerId} key saved` : 'Offline commands ready'}
+              </Text>
+            </View>
+          </View>
         </View>
 
         <View className="flex-1">

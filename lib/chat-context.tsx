@@ -43,7 +43,7 @@ export interface ChatContextType {
   setSpeaking: (speaking: boolean) => void;
   setJarvisState: (state: 'idle' | 'listening' | 'thinking' | 'speaking') => void;
   updateApiConfig: (config: Partial<ApiConfig>) => Promise<void>;
-  testConnection: (override?: Partial<ApiConfig>) => Promise<{ ok: boolean; message: string }>;
+  testConnection: (override?: Partial<ApiConfig>, onProgress?: (message: string) => void) => Promise<{ ok: boolean; message: string }>;
   testServerAssistant: () => Promise<{ ok: boolean; message: string }>;
   sendMessage: (content: string) => Promise<void>;
   loadChatHistory: () => Promise<void>;
@@ -182,11 +182,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const testConnection = useCallback(async (override: Partial<ApiConfig> = {}) => {
+  const testConnection = useCallback(async (override: Partial<ApiConfig> = {}, onProgress?: (message: string) => void) => {
     const candidateProviderId = override.providerId ?? apiConfig.providerId;
     const candidateApiKeys = { ...apiConfig.apiKeys, ...(override.apiKeys ?? {}) };
     if (typeof override.apiKey === 'string') candidateApiKeys[candidateProviderId] = override.apiKey;
     try {
+      onProgress?.(candidateProviderId === 'gemini' ? 'Step 1 of 3: asking Google which models this key can use…' : 'Step 1 of 2: contacting the selected provider…');
       const detectedModel = candidateProviderId === 'gemini'
         ? await discoverGeminiModel(override.apiKey ?? candidateApiKeys[candidateProviderId] ?? '', override.endpoint ?? apiConfig.endpoint)
         : undefined;
@@ -202,7 +203,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         agents: override.agents ?? apiConfig.agents,
       };
       if (!candidate.apiKey.trim()) return { ok: false, message: 'Add a provider key before testing the connection.' };
+      onProgress?.(candidateProviderId === 'gemini' ? `Step 2 of 3: found ${candidate.model}; sending a small test request…` : 'Step 2 of 2: sending a small test request…');
       await requestAssistantReply(candidate, [], 'Reply with exactly: Connection OK.');
+      onProgress?.(candidateProviderId === 'gemini' ? 'Step 3 of 3: saving the verified key and model on this device…' : 'Saving the verified provider setup on this device…');
       await updateApiConfig({
         providerId: candidate.providerId,
         apiKey: candidate.apiKey,
@@ -264,12 +267,22 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const agent = getAgent(apiConfig);
-        const result = await runFallbackChain([
-          {
-            id: getProvider(apiConfig.providerId).name,
-            run: () => requestAssistantReply(apiConfig, messages, content, memory),
-          },
+          const agent = getAgent(apiConfig);
+          const result = await runFallbackChain([
+            {
+              id: getProvider(apiConfig.providerId).name,
+              run: async () => {
+                try {
+                  return await requestAssistantReply(apiConfig, messages, content, memory);
+                } catch (error) {
+                  if (apiConfig.providerId !== 'gemini' || !/404|not found|model/i.test(error instanceof Error ? error.message : '')) throw error;
+                  const recoveredModel = await discoverGeminiModel(apiConfig.apiKey, apiConfig.endpoint);
+                  if (!recoveredModel || recoveredModel === apiConfig.model) throw error;
+                  await updateApiConfig({ providerId: 'gemini', model: recoveredModel });
+                  return requestAssistantReply({ ...apiConfig, model: recoveredModel }, messages, content, memory);
+                }
+              },
+            },
           {
             id: 'Jarvis secure backup',
             run: async () => (await serverAssistant.mutateAsync(buildServerAssistantInput(
@@ -471,6 +484,9 @@ function formatConnectionError(error: unknown, providerName = 'the provider') {
     return 'I could not reach that provider. Check your internet connection, endpoint, and provider selection in Settings.';
   }
   const message = error instanceof Error ? error.message : 'Unknown provider error.';
+  if (/404|not found/i.test(message)) {
+    return `${providerName} returned 404. The saved model may not be available to this key, so retry Auto setup to rediscover an allowed model. Also confirm the Gemini endpoint is https://generativelanguage.googleapis.com/v1beta.`;
+  }
   if (/API key|api key|permission|unauthorized|forbidden|401|403/i.test(message)) {
     return `${providerName} rejected this key. Open the official key page, confirm the key is active and allowed for this API, then create a fresh key and try again. Details: ${message}`;
   }

@@ -129,7 +129,7 @@ export default function SettingsScreen() {
         endpoint: endpoint.trim() || provider.endpoint,
         model: model.trim() || provider.model,
         agentId,
-      });
+      }, (progress) => setConnectionMessage(progress));
       setConnectionState(result.ok ? 'success' : 'error');
       setConnectionMessage(result.message);
     } catch (error) {
@@ -178,8 +178,8 @@ export default function SettingsScreen() {
         <View className={`rounded-2xl border p-4 mb-5 flex-row items-center gap-3 ${hasApiKey ? 'bg-success/10 border-success/30' : 'bg-warning/10 border-warning/30'}`}>
           <MaterialIcons name={hasApiKey ? 'check-circle' : 'offline-bolt'} size={25} color={hasApiKey ? '#49d17d' : '#f5b942'} />
           <View className="flex-1">
-            <Text className="font-semibold text-foreground">{hasApiKey ? `${provider.name} connection ready` : 'Offline mode active'}</Text>
-            <Text className="text-xs text-muted mt-1">{hasApiKey ? `${selectedAgent?.name ?? 'Jarvis'} will handle general questions.` : 'Preset commands work without a provider key.'}</Text>
+            <Text className="font-semibold text-foreground">{hasApiKey ? `${provider.name} key saved` : 'Offline mode active'}</Text>
+            <Text className="text-xs text-muted mt-1">{hasApiKey ? 'Run Auto setup & test below to verify the key and model.' : 'Preset commands work without a provider key.'}</Text>
           </View>
         </View>
 
