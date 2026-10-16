@@ -10,5 +10,6 @@ android {
   namespace "expo.modules.jarvisautomation"
   defaultConfig {
     minSdkVersion 24
+    versionName "1.0.0"
   }
 }
