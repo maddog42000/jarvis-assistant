@@ -48,3 +48,6 @@ jobs:
 
       - name: Validate Expo public config
         run: npx expo config --type public
+
+      - name: Validate Android prebuild and local native modules
+        run: npx expo prebuild --platform android --no-install
