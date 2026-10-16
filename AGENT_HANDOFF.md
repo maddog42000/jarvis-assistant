@@ -78,3 +78,49 @@ Security reminder: never commit or send API keys in chat, source files, screensh
 The Chat header now shows two separate states: internet reachability and whether a provider key is merely saved. A green internet indicator no longer claims that AI requests are ready. Settings shows an animated result card with live stages such as contacting the provider, discovering a model, sending a small test request, and saving verified setup.
 
 Gemini chat requests now retry once with a freshly discovered model when a stale saved model produces a 404. Gemini 404 errors also explain that the model may not be available to the key and show the expected `https://generativelanguage.googleapis.com/v1beta` endpoint.
+
+
+---
+
+# Sandbox Agent Build Handoff (October 2026)
+
+## User's delivery goal
+The user develops from an Android phone and wants a sandbox-capable agent to pick up the repository, finish any remaining build work, compile an installable APK, and return the artifact without requiring the user to manually repeat a long Expo/EAS account setup.
+
+## Truth about project/framework
+This repository is still **Expo SDK 54 / React Native / TypeScript**. The user has Godot 4.7.2 Android Editor installed and is considering a Godot migration, but a Godot project has **not** been created in this repository. Do not tell the user this code is already Godot or attempt a partial in-place port without planning it. Existing features and tests should be preserved while choosing a migration strategy.
+
+## New no-EAS APK workflow
+Use `.github/workflows/android-apk.yml`. It is designed to:
+1. Install pinned pnpm dependencies.
+2. Run type checks, tests, fallback tests, lint, and Expo config validation.
+3. Generate the Android native project using Expo prebuild.
+4. Compile `android/app/build/outputs/apk/debug/app-debug.apk` using Java 17 and Gradle.
+5. Upload the APK as a GitHub Actions artifact named `jarvis-assistant-debug-apk` for 14 days.
+
+This debug build should not require an Expo/EAS account or a signing secret. It is a **debug-signed test APK**, not a production release. Run it from GitHub **Actions → Build installable Android APK → Run workflow** on the `codex/jarvis-release-apk` branch. If workflow validation or compilation fails, inspect logs, fix the actual issue on a branch, and rerun. Never report a build as successful unless GitHub shows a successful run and the artifact exists.
+
+## Agent checklist
+- Inspect the current default branch, PRs, workflow run state, and branch heads first. The earlier release-preparation PR may have changed state.
+- Do not assume prior CI notes prove the current revision passes.
+- Run all checks listed above, then compile the APK.
+- Download/inspect the artifact metadata and confirm the path exists before reporting completion.
+- If possible, install and smoke-test on a physical Android device. If not possible, explicitly report that compile passed but device behavior is unverified.
+- Do not commit APKs, generated `android/` folders, credentials, API keys, keystores, or `.env` files.
+- Keep provider keys user-entered; keep server credentials in a deployment secret store.
+- Keep accessibility actions opt-in and narrowly scoped. No silent screen capture, scraping, or transmission.
+- Do not add unsupported claims such as working wake-word listening or in-app speech recognition. Current voice input uses Android keyboard dictation guidance.
+
+## Still unfinished / release-gate items
+- Build and install an APK on the user's phone; validate onboarding, online provider, offline commands, local history, TTS, app/web launch, reminders/alarms, and accessibility enable/disable flow.
+- Dedicated in-app speech-to-text and hands-free wake word are not implemented.
+- Chat search and text export are not implemented.
+- Text scaling/high-contrast accessibility options are incomplete.
+- Review/migrate provider-key persistence to platform-backed secure storage.
+- Review server assistant endpoint authentication, distributed rate limiting, quotas, and abuse monitoring before public deployment.
+- Verify native accessibility plugin autolinking and behavior on a clean build and real Android device.
+- Review Google Play Accessibility API disclosure and distribution policy before publishing.
+- Add cancellation/timeouts for native actions and improve error feedback only after current APK compiles.
+
+## Godot decision
+If the user decides to migrate to Godot 4, make it a clearly separated project or repository, not a misleading blend of GDScript and Expo code. Before implementing the full port, prove the available toolchain can export an APK. Godot itself cannot arbitrarily control other Android apps; app launching/intents and cross-app screen interaction require native Android integration and explicit user-granted accessibility access.
