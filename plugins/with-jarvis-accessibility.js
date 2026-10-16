@@ -29,10 +29,13 @@ module.exports = function withJarvisAccessibility(config) {
     const root = mod.modRequest.platformProjectRoot;
     const javaDir = path.join(root, 'app/src/main/java/com/app/jarvisassistant/automation');
     const xmlDir = path.join(root, 'app/src/main/res/xml');
+    const valuesDir = path.join(root, 'app/src/main/res/values');
     fs.mkdirSync(javaDir, { recursive: true });
     fs.mkdirSync(xmlDir, { recursive: true });
+    fs.mkdirSync(valuesDir, { recursive: true });
     fs.writeFileSync(path.join(javaDir, 'JarvisAccessibilityService.kt'), SERVICE_SOURCE);
     fs.writeFileSync(path.join(xmlDir, 'jarvis_accessibility_service.xml'), SERVICE_XML);
+    fs.writeFileSync(path.join(valuesDir, 'jarvis_accessibility_strings.xml'), SERVICE_STRINGS);
     return mod;
   }]);
 
@@ -48,6 +51,11 @@ const SERVICE_XML = `<?xml version="1.0" encoding="utf-8"?>
   android:canPerformGestures="false"
   android:description="@string/jarvis_accessibility_description"
   android:accessibilityFlags="flagReportViewIds" />`;
+
+const SERVICE_STRINGS = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="jarvis_accessibility_description">Optional screen-control actions for Jarvis. Enable only when you want to use accessibility workflows.</string>
+</resources>`;
 
 const SERVICE_SOURCE = `package com.app.jarvisassistant.automation
 
