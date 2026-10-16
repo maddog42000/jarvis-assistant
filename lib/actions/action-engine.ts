@@ -5,7 +5,7 @@
  * can run, arguments are validated before dispatch, and workflows stop at the
  * first failure. Native/platform work is supplied by the caller as handlers.
  */
-export const ACTION_IDS = ['openUrl', 'searchWeb', 'setReminder', 'openClock', 'openApp', 'openAccessibilitySettings', 'clickVisibleText', 'typeIntoLabeledField', 'pressBack'] as const;
+export const ACTION_IDS = ['openUrl', 'searchWeb', 'setReminder', 'openClock', 'openApp', 'openAccessibilitySettings', 'setAlarm', 'clickVisibleText', 'typeIntoLabeledField', 'pressBack'] as const;
 export type ActionId = (typeof ACTION_IDS)[number];
 
 export type ActionArguments = {
@@ -15,6 +15,7 @@ export type ActionArguments = {
   openClock: { kind?: 'alarm' | 'timer' };
   openApp: { app: 'google' | 'gemini' | 'chrome' | 'bixby' };
   openAccessibilitySettings: Record<string, never>;
+  setAlarm: { hour: number; minute: number; label?: string };
   clickVisibleText: { label: string };
   typeIntoLabeledField: { label: string; text: string };
   pressBack: Record<string, never>;
@@ -95,6 +96,11 @@ export function validateActionStep(input: unknown): { ok: true; step: ActionStep
       break;
     case 'openApp':
       if (!['google', 'gemini', 'chrome', 'bixby'].includes(String(args.app))) return { ok: false, error: 'This app shortcut is not supported.' };
+      break;
+    case 'setAlarm':
+      if (typeof args.hour !== 'number' || !Number.isInteger(args.hour) || args.hour < 0 || args.hour > 23) return { ok: false, error: 'Alarm hour must be an integer from 0 to 23.' };
+      if (typeof args.minute !== 'number' || !Number.isInteger(args.minute) || args.minute < 0 || args.minute > 59) return { ok: false, error: 'Alarm minute must be an integer from 0 to 59.' };
+      if (args.label !== undefined && !nonEmptyText(args.label, 80)) return { ok: false, error: 'Alarm label must contain 1-80 characters.' };
       break;
     case 'openAccessibilitySettings':
     case 'pressBack':
