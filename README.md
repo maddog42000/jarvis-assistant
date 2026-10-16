@@ -85,16 +85,28 @@ Screen-control actions require a native Android build with the local `JarvisAuto
 
 ## Build an Android APK
 
-This repository contains application source code, not a prebuilt APK. The project does not currently include an `eas.json` build profile, so configure an Expo Application Services project and build profile before running a cloud build. Follow the official [Expo EAS Build documentation](https://docs.expo.dev/build/introduction/).
+This repository contains application source code, not a prebuilt APK. An `eas.json` is included with a **preview profile that produces an installable APK** and a production profile that produces an Android App Bundle (AAB). Follow the official [Expo EAS Build documentation](https://docs.expo.dev/build/introduction/).
 
-Typical EAS flow after EAS is configured:
+### Easiest cloud build
 
-```bash
-npx eas-cli build:configure
-npx eas-cli build --platform android --profile preview
-```
+1. Merge the release-preparation pull request into `main` after reviewing it, or use the `codex/jarvis-release-apk` branch if you want to build before merging.
+2. Open a terminal in the repository and install/login to EAS if prompted:
 
-Check the generated configuration and choose an APK-producing profile if you want a directly installable APK. A default Android production build may produce an AAB instead. Review the build output and install/test the resulting artifact on your actual device.
+   ```bash
+   npx eas-cli@latest login
+   npx eas-cli@latest build:configure
+   ```
+
+   `build:configure` may ask you to create or link an Expo project and will add the project ID to the app configuration. Keep that ID change in the repository; never commit API keys or signing credentials.
+3. Start the APK build:
+
+   ```bash
+   npx eas-cli@latest build --platform android --profile preview
+   ```
+
+4. When the build finishes, open the build URL printed by EAS and download the APK to your Android phone. Allow installation from that download source if Android asks, install the APK, and test the new Actions tab, app launch, reminders, Clock intent, and accessibility opt-in.
+
+For later production distribution, use `npx eas-cli@latest build --platform android --profile production`; that profile produces an AAB, normally used for store distribution. The first APK build still requires an Expo account/project setup. Review the build output and test the resulting artifact on your actual device.
 
 ## Security notes
 
