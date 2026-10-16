@@ -10,6 +10,11 @@ export const BUILT_IN_WORKFLOWS: ActionWorkflow[] = [
     ],
   },
   {
+    id: 'enable-screen-actions',
+    name: 'Open Accessibility Settings',
+    steps: [{ id: 'open-accessibility-settings', action: 'openAccessibilitySettings', args: {} }],
+  },
+  {
     id: 'open-gemini',
     name: 'Open Gemini',
     steps: [{ id: 'launch-gemini', action: 'openApp', args: { app: 'gemini' } }],
