@@ -21,6 +21,28 @@ Jarvis workflows are JSON data validated against an allowlist. They are not Java
 }
 ```
 
+## Example: request an Android alarm
+
+```json
+{
+  "id": "work-alarm",
+  "name": "Work alarm",
+  "steps": [
+    {
+      "id": "clock-alarm",
+      "action": "setAlarm",
+      "args": {
+        "hour": 7,
+        "minute": 30,
+        "label": "Get ready for work"
+      }
+    }
+  ]
+}
+```
+
+The native bridge asks Android Clock to create the alarm. Android may show its own confirmation UI, and users should verify the alarm was actually saved. Local reminder notifications are a separate action and require notification permission.
+
 ## Example: opt-in screen control
 
 ```json
