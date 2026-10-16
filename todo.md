@@ -93,3 +93,21 @@
 ## Platform Notes
 - [x] Explain that exact accent and female voice availability depend on Android's installed TTS engine and language packs
 - [x] Explain that API keys remain local and are never bundled into the app
+
+
+## Repository Readiness Pass (2026-10)
+- [x] Add project README with install, provider setup, validation, and Android build notes
+- [x] Add a credential-free `.env.example` for backend configuration
+- [x] Add security guidance for credentials and public server deployment
+- [x] Add GitHub Actions validation workflow for typecheck, tests, fallback routing, lint, and Expo config
+- [ ] Confirm CI completes successfully on GitHub
+- [ ] Run validation locally with the checked-in lockfile and resolve any failures
+- [ ] Review and test API-key storage; migrate sensitive provider keys from AsyncStorage to platform-backed secure storage before production
+- [ ] Review the public server assistant endpoint for authentication, distributed rate limiting, quotas, and abuse monitoring
+- [ ] Add dedicated in-app speech recognition only after selecting and testing a build-safe native approach
+- [ ] Add chat search and text export with user-visible error handling
+- [ ] Add accessibility text scaling and contrast options
+- [ ] Add Android release build profile and test APK on a physical device
+
+## Release Gate
+Do not mark the app release-ready until CI passes, provider connection and offline behavior are tested on-device, secrets are confirmed absent from Git history, and an installable Android build has been exercised on the target device.
