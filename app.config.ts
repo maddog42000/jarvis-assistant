@@ -88,6 +88,7 @@ const config: ExpoConfig = {
   },
   plugins: [
     "expo-router",
+    "./plugins/with-jarvis-accessibility",
     [
       "expo-audio",
       {
