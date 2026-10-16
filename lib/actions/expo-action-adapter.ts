@@ -1,7 +1,20 @@
 import { Linking, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { requireOptionalNativeModule } from 'expo-modules-core';
 
 import type { ActionHandler, ActionId } from './action-engine';
+
+type NativeAutomation = {
+  openAccessibilitySettings: () => Promise<boolean>;
+  isAccessibilityServiceEnabled: () => boolean;
+  clickVisibleText: (label: string) => Promise<boolean>;
+  typeIntoLabeledField: (label: string, text: string) => Promise<boolean>;
+  pressBack: () => Promise<boolean>;
+};
+
+const nativeAutomation = Platform.OS === 'android'
+  ? requireOptionalNativeModule<NativeAutomation>('JarvisAutomation')
+  : null;
 
 const SEARCH_URLS = {
   google: (query: string) => `https://www.google.com/search?q=${encodeURIComponent(query)}`,
@@ -105,5 +118,32 @@ export function createExpoActionHandlers(): Partial<Record<ActionId, ActionHandl
       }
     },
     openApp: async (args) => openFirstAvailable(APP_URLS[String(args.app)] ?? []),
+    openAccessibilitySettings: async () => {
+      if (!nativeAutomation) return { ok: false, message: 'Accessibility setup is only available in a native Android build, not Expo Go or web preview.' };
+      await nativeAutomation.openAccessibilitySettings();
+      return { ok: true, message: 'Opened Android Accessibility settings. Enable Jarvis Accessibility Actions only if you want screen-control workflows.' };
+    },
+    clickVisibleText: async (args) => {
+      if (!nativeAutomation) return { ok: false, message: 'Screen actions require a native Android build with the Jarvis automation module.' };
+      if (!nativeAutomation.isAccessibilityServiceEnabled()) return { ok: false, message: 'Jarvis Accessibility is not enabled. Run the Open Accessibility Settings action first.' };
+      const clicked = await nativeAutomation.clickVisibleText(String(args.label));
+      return clicked
+        ? { ok: true, message: 'Tapped the matching visible control.' }
+        : { ok: false, message: 'No clickable visible control matched that text. The app may use a custom UI or the label may have changed.' };
+    },
+    typeIntoLabeledField: async (args) => {
+      if (!nativeAutomation) return { ok: false, message: 'Screen actions require a native Android build with the Jarvis automation module.' };
+      if (!nativeAutomation.isAccessibilityServiceEnabled()) return { ok: false, message: 'Jarvis Accessibility is not enabled. Run the Open Accessibility Settings action first.' };
+      const typed = await nativeAutomation.typeIntoLabeledField(String(args.label), String(args.text));
+      return typed
+        ? { ok: true, message: 'Entered text into the matching visible field.' }
+        : { ok: false, message: 'No matching editable field was found. This may not work with unlabeled or custom fields.' };
+    },
+    pressBack: async () => {
+      if (!nativeAutomation) return { ok: false, message: 'Screen actions require a native Android build with the Jarvis automation module.' };
+      if (!nativeAutomation.isAccessibilityServiceEnabled()) return { ok: false, message: 'Jarvis Accessibility is not enabled. Run the Open Accessibility Settings action first.' };
+      const pressed = await nativeAutomation.pressBack();
+      return pressed ? { ok: true, message: 'Pressed Android Back.' } : { ok: false, message: 'Android Back action was not accepted.' };
+    },
   };
 }
