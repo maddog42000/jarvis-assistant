@@ -5,7 +5,7 @@
  * can run, arguments are validated before dispatch, and workflows stop at the
  * first failure. Native/platform work is supplied by the caller as handlers.
  */
-export const ACTION_IDS = ['openUrl', 'searchWeb', 'setReminder', 'openClock', 'openApp'] as const;
+export const ACTION_IDS = ['openUrl', 'searchWeb', 'setReminder', 'openClock', 'openApp', 'openAccessibilitySettings', 'clickVisibleText', 'typeIntoLabeledField', 'pressBack'] as const;
 export type ActionId = (typeof ACTION_IDS)[number];
 
 export type ActionArguments = {
@@ -14,6 +14,10 @@ export type ActionArguments = {
   setReminder: { title: string; at: string };
   openClock: { kind?: 'alarm' | 'timer' };
   openApp: { app: 'google' | 'gemini' | 'chrome' | 'bixby' };
+  openAccessibilitySettings: Record<string, never>;
+  clickVisibleText: { label: string };
+  typeIntoLabeledField: { label: string; text: string };
+  pressBack: Record<string, never>;
 };
 
 export type ActionStep = {
@@ -92,6 +96,19 @@ export function validateActionStep(input: unknown): { ok: true; step: ActionStep
     case 'openApp':
       if (!['google', 'gemini', 'chrome', 'bixby'].includes(String(args.app))) return { ok: false, error: 'This app shortcut is not supported.' };
       break;
+    case 'openAccessibilitySettings':
+    case 'pressBack':
+      break;
+    case 'clickVisibleText':
+      if (!nonEmptyText(args.label, 100)) return { ok: false, error: 'Visible text target must contain 1-100 characters.' };
+      break;
+    case 'typeIntoLabeledField': {
+      if (!nonEmptyText(args.label, 80)) return { ok: false, error: 'Field label must contain 1-80 characters.' };
+      if (typeof args.text !== 'string' || args.text.length > 500) return { ok: false, error: 'Text must be 0-500 characters.' };
+      const blocked = ['password', 'passcode', 'pin', 'verification code', 'one-time code', 'otp', 'credit card', 'bank account', 'payment'];
+      if (blocked.some((word) => String(args.label).toLowerCase().includes(word))) return { ok: false, error: 'Typing into password, verification, payment, and banking fields is blocked.' };
+      break;
+    }
   }
 
   return { ok: true, step: { id: input.id, action: input.action as ActionId, args, delayMs } };
