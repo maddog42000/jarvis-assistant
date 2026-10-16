@@ -6,6 +6,7 @@ import type { ActionHandler, ActionId } from './action-engine';
 
 type NativeAutomation = {
   openAccessibilitySettings: () => Promise<boolean>;
+  setAlarm: (hour: number, minute: number, label: string) => Promise<boolean>;
   isAccessibilityServiceEnabled: () => boolean;
   clickVisibleText: (label: string) => Promise<boolean>;
   typeIntoLabeledField: (label: string, text: string) => Promise<boolean>;
@@ -118,6 +119,15 @@ export function createExpoActionHandlers(): Partial<Record<ActionId, ActionHandl
       }
     },
     openApp: async (args) => openFirstAvailable(APP_URLS[String(args.app)] ?? []),
+    setAlarm: async (args) => {
+      if (!nativeAutomation) return { ok: false, message: 'Setting a precise Android alarm requires a native Android build with the Jarvis automation module.' };
+      try {
+        await nativeAutomation.setAlarm(Number(args.hour), Number(args.minute), String(args.label ?? 'Jarvis alarm'));
+        return { ok: true, message: 'Requested an alarm in Android Clock. Check the Clock screen to confirm the alarm was saved.' };
+      } catch (error) {
+        return { ok: false, message: error instanceof Error ? error.message : 'Android Clock did not accept the alarm request.' };
+      }
+    },
     openAccessibilitySettings: async () => {
       if (!nativeAutomation) return { ok: false, message: 'Accessibility setup is only available in a native Android build, not Expo Go or web preview.' };
       await nativeAutomation.openAccessibilitySettings();
