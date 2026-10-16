@@ -38,6 +38,8 @@ describe('Jarvis action engine', () => {
 
   it('allows opt-in accessibility actions but blocks sensitive field labels', () => {
     expect(validateActionStep({ id: 'settings', action: 'openAccessibilitySettings', args: {} }).ok).toBe(true);
+    expect(validateActionStep({ id: 'alarm', action: 'setAlarm', args: { hour: 7, minute: 30, label: 'Work' } }).ok).toBe(true);
+    expect(validateActionStep({ id: 'alarm', action: 'setAlarm', args: { hour: 25, minute: 0 } }).ok).toBe(false);
     expect(validateActionStep({ id: 'tap', action: 'clickVisibleText', args: { label: 'Continue' } }).ok).toBe(true);
     expect(validateActionStep({ id: 'type', action: 'typeIntoLabeledField', args: { label: 'Search', text: 'hello' } }).ok).toBe(true);
     const blocked = validateActionStep({ id: 'type', action: 'typeIntoLabeledField', args: { label: 'Password', text: 'secret' } });
