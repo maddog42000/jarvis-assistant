@@ -10,6 +10,8 @@ Jarvis Assistant is an Expo SDK 54 / React Native app focused on offline-first c
 - Optional server-side AI fallback through the `assistant.complete` tRPC procedure when the backend is deployed and configured.
 - Text-to-speech via `expo-speech`, including voice/rate/pitch preferences where supported by the device.
 - Onboarding, provider connection tests, settings, and local companion notes.
+- Allowlisted action workflows for web search/link opening, app shortcuts, local reminders, and Android Clock alarm requests.
+- Optional Android accessibility actions (visible-text tap, labeled-field typing, Back) behind a manual Settings opt-in and native build.
 
 ## Known limitations
 
@@ -74,6 +76,12 @@ The server reads these optional environment variables in `server/_core/env.ts`:
 See [`.env.example`](.env.example) for variable names only. It contains no credentials. Configure real secrets in your local untracked environment or deployment secret manager. Never commit `.env` files containing credentials.
 
 The server-side AI fallback depends on a valid backend deployment and its configured AI credential. The app can still use locally configured provider keys or offline commands when the server fallback is unavailable.
+
+## Action workflows and screen control
+
+Open the **Actions** tab to run built-in workflows or edit/import/export validated workflow JSON. Each run requires an explicit confirmation and stops at the first failed action. See [workflow examples and limits](docs/action-workflows.md).
+
+Screen-control actions require a native Android build with the local `JarvisAutomation` module and a user manually enabling **Jarvis Accessibility Actions** in Android Accessibility settings. They are not available in Expo Go or the web preview. This permission is powerful; the service intentionally does not retain or transmit screen contents, and text entry is blocked for common password, verification, payment, and banking field labels. Those safeguards are not perfect. Review platform policy and test thoroughly before distributing a build.
 
 ## Build an Android APK
 
