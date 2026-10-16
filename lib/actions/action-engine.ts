@@ -94,7 +94,7 @@ export function validateActionStep(input: unknown): { ok: true; step: ActionStep
       break;
   }
 
-  return { ok: true, step: { id: input.id, action: input.action as ActionId, args, delayMs } };
+  return { ok: true, step: { id: input.id, action: input.action as ActionId, args, ...(delayMs > 0 ? { delayMs } : {}) } };
 }
 
 export function validateWorkflow(input: unknown): { ok: true; workflow: ActionWorkflow } | { ok: false; error: string } {
