@@ -2,7 +2,7 @@ const { withAndroidManifest, withDangerousMod } = require('@expo/config-plugins'
 const fs = require('fs');
 const path = require('path');
 
-const SERVICE_NAME = 'com.app.jarvisassistant.automation.JarvisAccessibilityService';
+const SERVICE_NAME = 'expo.modules.jarvisautomation.JarvisAccessibilityService';
 
 module.exports = function withJarvisAccessibility(config) {
   config = withAndroidManifest(config, (mod) => {
@@ -27,13 +27,10 @@ module.exports = function withJarvisAccessibility(config) {
 
   config = withDangerousMod(config, ['android', async (mod) => {
     const root = mod.modRequest.platformProjectRoot;
-    const javaDir = path.join(root, 'app/src/main/java/com/app/jarvisassistant/automation');
     const xmlDir = path.join(root, 'app/src/main/res/xml');
     const valuesDir = path.join(root, 'app/src/main/res/values');
-    fs.mkdirSync(javaDir, { recursive: true });
     fs.mkdirSync(xmlDir, { recursive: true });
     fs.mkdirSync(valuesDir, { recursive: true });
-    fs.writeFileSync(path.join(javaDir, 'JarvisAccessibilityService.kt'), SERVICE_SOURCE);
     fs.writeFileSync(path.join(xmlDir, 'jarvis_accessibility_service.xml'), SERVICE_XML);
     fs.writeFileSync(path.join(valuesDir, 'jarvis_accessibility_strings.xml'), SERVICE_STRINGS);
     return mod;
@@ -57,7 +54,7 @@ const SERVICE_STRINGS = `<?xml version="1.0" encoding="utf-8"?>
   <string name="jarvis_accessibility_description">Optional screen-control actions for Jarvis. Enable only when you want to use accessibility workflows.</string>
 </resources>`;
 
-const SERVICE_SOURCE = `package com.app.jarvisassistant.automation
+const SERVICE_SOURCE = `package expo.modules.jarvisautomation
 
 import android.accessibilityservice.AccessibilityService
 import android.os.Bundle
