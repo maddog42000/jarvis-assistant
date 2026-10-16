@@ -41,6 +41,23 @@ class JarvisAutomationModule : Module() {
       service.typeIntoLabeledField(label, text)
     }
 
+    AsyncFunction("setAlarm") { hour: Int, minute: Int, label: String ->
+      require(hour in 0..23) { "Alarm hour must be from 0 to 23." }
+      require(minute in 0..59) { "Alarm minute must be from 0 to 59." }
+      require(label.length <= 80) { "Alarm label must be 80 characters or fewer." }
+      val activity = appContext.currentActivity
+        ?: throw IllegalStateException("Jarvis needs an active screen to request an alarm.")
+      val intent = Intent("android.intent.action.SET_ALARM")
+        .putExtra("android.intent.extra.alarm.HOUR", hour)
+        .putExtra("android.intent.extra.alarm.MINUTES", minute)
+        .putExtra("android.intent.extra.alarm.MESSAGE", label.ifBlank { "Jarvis alarm" })
+      if (intent.resolveActivity(activity.packageManager) == null) {
+        throw IllegalStateException("No Android Clock app accepted the set-alarm intent.")
+      }
+      activity.startActivity(intent)
+      true
+    }
+
     AsyncFunction("pressBack") {
       val service = JarvisAccessibilityService.instance
         ?: throw IllegalStateException("Enable Jarvis Accessibility in Android Settings first.")
