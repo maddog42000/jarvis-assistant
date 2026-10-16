@@ -51,6 +51,10 @@ export default function ActionsScreen() {
   const saveDraft = async () => {
     try {
       const workflow = importWorkflowJson(jsonDraft);
+      if (BUILT_IN_WORKFLOWS.some((item) => item.id === workflow.id)) {
+        setStatus('Built-in workflow IDs are reserved. Change the JSON "id" to create a saved copy of a built-in workflow.');
+        return;
+      }
       const next = [...workflows.filter((item) => item.id !== workflow.id), workflow];
       await saveWorkflows(next);
       setSelectedId(workflow.id);
@@ -64,6 +68,10 @@ export default function ActionsScreen() {
     try {
       const text = await Clipboard.getStringAsync();
       const workflow = importWorkflowJson(text);
+      if (BUILT_IN_WORKFLOWS.some((item) => item.id === workflow.id)) {
+        setStatus('Built-in workflow IDs are reserved. Change the JSON "id" to import it as a saved copy.');
+        return;
+      }
       const next = [...workflows.filter((item) => item.id !== workflow.id), workflow];
       await saveWorkflows(next);
       setSelectedId(workflow.id);
