@@ -36,6 +36,14 @@ describe('Jarvis action engine', () => {
     expect(calls).toEqual(['search', 'clock']);
   });
 
+  it('allows opt-in accessibility actions but blocks sensitive field labels', () => {
+    expect(validateActionStep({ id: 'settings', action: 'openAccessibilitySettings', args: {} }).ok).toBe(true);
+    expect(validateActionStep({ id: 'tap', action: 'clickVisibleText', args: { label: 'Continue' } }).ok).toBe(true);
+    expect(validateActionStep({ id: 'type', action: 'typeIntoLabeledField', args: { label: 'Search', text: 'hello' } }).ok).toBe(true);
+    const blocked = validateActionStep({ id: 'type', action: 'typeIntoLabeledField', args: { label: 'Password', text: 'secret' } });
+    expect(blocked.ok).toBe(false);
+  });
+
   it('uses bounded optional delays and reports missing platform handlers', async () => {
     const wait = vi.fn(async () => undefined);
     const result = await runWorkflow({
