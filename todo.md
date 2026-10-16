@@ -111,3 +111,18 @@
 
 ## Release Gate
 Do not mark the app release-ready until CI passes, provider connection and offline behavior are tested on-device, secrets are confirmed absent from Git history, and an installable Android build has been exercised on the target device.
+
+
+## Action Engine and Android Automation Upgrade
+- [x] Add allowlisted workflow action engine with argument validation, bounded delays, and stop-on-failure execution
+- [x] Add native-friendly web search/link, Clock intent, app shortcut, and local notification reminder handlers
+- [x] Add local workflow JSON editor, clipboard import/export, run confirmation, and progress feedback
+- [x] Add opt-in Android Accessibility Service integration behind an explicit Android Settings enable step
+- [x] Restrict screen automation to visible-text clicks, labeled-field text entry, and Android Back
+- [x] Block accessibility text entry for password, verification, payment, and banking fields
+- [ ] Verify local Expo module autolinking and Android prebuild on a clean checkout
+- [ ] Run TypeScript, lint, unit tests, and Expo config validation after action-engine integration
+- [ ] Test Clock intents, reminders, app links, and accessibility permission flow on physical Android devices
+- [ ] Review Google Play Accessibility API disclosure and distribution policy before publishing
+- [ ] Add a native action timeout/cancellation strategy and improve handling for unlabeled/custom UI controls
+- [ ] Add authenticated/confirmed workflow generation from natural-language requests; never run AI-generated actions without user review
