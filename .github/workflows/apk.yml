@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build-apk:
-    name: Build installable debug APK
+    name: Build installable standalone release APK
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -51,23 +51,23 @@ jobs:
       - name: Generate native Android project
         run: npx expo prebuild --platform android --no-install --clean
 
-      - name: Build APK
+      - name: Build standalone release APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: NODE_ENV=production ./gradlew assembleRelease --no-daemon --stacktrace
 
-      - name: Copy APK with stable filename
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk Jarvis-Assistant-stable.apk
+      - name: Copy standalone APK with stable filename
+        run: cp android/app/build/outputs/apk/release/app-release.apk Jarvis-Assistant-standalone.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Jarvis-Assistant-stable
-          path: Jarvis-Assistant-stable.apk
+          name: Jarvis-Assistant-standalone
+          path: Jarvis-Assistant-standalone.apk
           if-no-files-found: error
 
       - name: Publish tagged APK release
         if: startsWith(github.ref, 'refs/tags/apk-v')
         uses: softprops/action-gh-release@v2
         with:
-          files: Jarvis-Assistant-stable.apk
+          files: Jarvis-Assistant-standalone.apk
           generate_release_notes: true
