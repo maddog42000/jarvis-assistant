@@ -42,12 +42,14 @@ const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
   description: "A sophisticated AI assistant with voice control, offline capabilities, and beautiful animations",
-  version: "1.0.0",
+  version: "2.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
   userInterfaceStyle: "automatic",
-  newArchEnabled: true,
+  // Use the legacy bridge for the stability APK. Jarvis does not require the
+  // new architecture, and the legacy bridge is more forgiving on older Android builds.
+  newArchEnabled: false,
   ios: {
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,
@@ -66,6 +68,7 @@ const config: ExpoConfig = {
     softwareKeyboardLayoutMode: "resize",
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
+    versionCode: 2,
     permissions: ["POST_NOTIFICATIONS"],
     intentFilters: [
       {
@@ -126,7 +129,6 @@ const config: ExpoConfig = {
   ],
   experiments: {
     typedRoutes: true,
-    reactCompiler: true,
   },
 };
 
