@@ -47,9 +47,7 @@ const config: ExpoConfig = {
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
   userInterfaceStyle: "automatic",
-  // Use the legacy bridge for the stability APK. Jarvis does not require the
-  // new architecture, and the legacy bridge is more forgiving on older Android builds.
-  newArchEnabled: false,
+  newArchEnabled: true,
   ios: {
     supportsTablet: true,
     bundleIdentifier: env.iosBundleId,
