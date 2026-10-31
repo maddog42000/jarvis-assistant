@@ -3,6 +3,8 @@ name: Jarvis standalone APK
 on:
   workflow_dispatch:
   push:
+    branches:
+      - "jarvis-3.0/voice-ui-foundation"
     tags:
       - "apk-v*"
 
