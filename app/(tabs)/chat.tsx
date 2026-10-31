@@ -82,13 +82,13 @@ export default function ChatScreen() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-background">
       <ScreenContainer className="flex-1 p-0" edges={['top', 'left', 'right']}>
-        <View className="bg-surface border-b border-primary/20 px-4 py-4 flex-row items-center gap-3">
-          <View className="w-10 h-10 rounded-full bg-primary/15 items-center justify-center">
+        <View className="bg-surface border-b border-primary/20 px-4 py-3 flex-row items-center gap-3">
+          <View className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/25 items-center justify-center">
             <MaterialIcons name="smart-toy" size={22} color="#18d5ff" />
           </View>
           <View className="flex-1">
-            <Text className="text-2xl font-bold text-foreground">Jarvis</Text>
-            <Text className="text-xs text-muted mt-0.5">Offline first · secure AI backup</Text>
+            <Text className="text-xl font-bold text-foreground">Jarvis</Text>
+            <Text className="text-xs text-muted mt-0.5">Your assistant · private device history</Text>
           </View>
           <View className="items-end gap-1">
             <Pressable onPress={() => void checkConnection()} className="flex-row items-center gap-1" accessibilityLabel="Check internet status">
@@ -146,8 +146,8 @@ export default function ChatScreen() {
             <Pressable
               onPress={handleVoiceInput}
               style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
-              className="w-12 h-12 rounded-full bg-primary/15 border border-primary items-center justify-center"
-              accessibilityLabel="Voice input help"
+              className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/50 items-center justify-center"
+              accessibilityLabel="Use Android keyboard voice typing"
             >
               <MaterialIcons name="mic-none" size={22} color="#18d5ff" />
             </Pressable>
