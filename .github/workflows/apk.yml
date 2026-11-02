@@ -8,6 +8,7 @@ on:
       - "jarvis-3.1/automation-activity-google-foundation"
       - "jarvis-3.2/automation-builder-schedules"
       - "jarvis-3.3/chat-google-connection-ux"
+      - "jarvis-3.4/google-auth-foundation"
     tags:
       - "apk-v*"
 
