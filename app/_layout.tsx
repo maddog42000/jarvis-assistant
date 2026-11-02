@@ -81,6 +81,7 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
+    if (Platform.OS === "web") return;
     const openScheduledWorkflow = (response: Notifications.NotificationResponse | null) => {
       const data = response?.notification.request.content.data;
       if (data?.kind !== "scheduled-routine" || typeof data.workflowId !== "string") return;
