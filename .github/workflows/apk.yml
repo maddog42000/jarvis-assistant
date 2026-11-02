@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - "main"
       - "jarvis-3.0/voice-ui-foundation"
       - "jarvis-3.4.1/android-domexception-fix"
       - "jarvis-3.5/**"
@@ -60,6 +61,12 @@ jobs:
         working-directory: android
         run: NODE_ENV=production ./gradlew assembleRelease --no-daemon --stacktrace
 
+      - name: Read app version
+        id: app-version
+        run: |
+          VERSION="$(node -e 'const fs=require("fs"); const s=fs.readFileSync("app.config.ts","utf8"); const m=s.match(/version:\s*"([^"]+)"/); if(!m) process.exit(1); process.stdout.write(m[1]);')"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Copy standalone APK with stable filename
         run: cp android/app/build/outputs/apk/release/app-release.apk Jarvis-Assistant-standalone.apk
 
@@ -70,9 +77,14 @@ jobs:
           path: Jarvis-Assistant-standalone.apk
           if-no-files-found: error
 
-      - name: Publish tagged APK release
-        if: startsWith(github.ref, 'refs/tags/apk-v')
+      - name: Publish versioned APK release
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/apk-v')
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: apk-v${{ steps.app-version.outputs.version }}-standalone
+          target_commitish: ${{ github.sha }}
+          name: Jarvis Assistant v${{ steps.app-version.outputs.version }} (Standalone APK)
           files: Jarvis-Assistant-standalone.apk
           generate_release_notes: true
+          fail_on_unmatched_files: true
+          make_latest: true
