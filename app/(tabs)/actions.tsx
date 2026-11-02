@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
@@ -39,6 +40,15 @@ export default function ActionsScreen() {
   }, []);
 
   const selected = useMemo(() => workflows.find((workflow) => workflow.id === selectedId) ?? workflows[0], [selectedId, workflows]);
+
+  useEffect(() => {
+    if (typeof workflowId !== 'string') return;
+    const scheduled = workflows.find((workflow) => workflow.id === workflowId);
+    if (scheduled) {
+      setSelectedId(scheduled.id);
+      setStatus(`Opened from its scheduled reminder. Review "${scheduled.name}" and tap Run when you're ready.`);
+    }
+  }, [workflowId, workflows]);
 
   useEffect(() => {
     if (selected) setJsonDraft(exportWorkflowJson(selected));

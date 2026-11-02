@@ -32,6 +32,7 @@ export default function TabLayout() {
       <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: ({ color, focused }) => <MaterialIcons size={focused ? 24 : 22} name="home" color={color} /> }} />
       <Tabs.Screen name="chat" options={{ title: 'Chat', tabBarIcon: ({ color, focused }) => <MaterialIcons size={focused ? 24 : 22} name="chat-bubble-outline" color={color} /> }} />
       <Tabs.Screen name="actions" options={{ title: 'Actions', tabBarIcon: ({ color, focused }) => <MaterialIcons size={focused ? 24 : 22} name="bolt" color={color} /> }} />
+      <Tabs.Screen name="builder" options={{ title: 'Builder', tabBarIcon: ({ color, focused }) => <MaterialIcons size={focused ? 24 : 22} name="build-circle" color={color} /> }} />
       <Tabs.Screen name="activity" options={{ title: 'Activity', tabBarIcon: ({ color, focused }) => <MaterialIcons size={focused ? 24 : 22} name="history" color={color} /> }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: ({ color, focused }) => <MaterialIcons size={focused ? 24 : 22} name="tune" color={color} /> }} />
     </Tabs>
