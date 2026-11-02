@@ -42,7 +42,7 @@ const config: ExpoConfig = {
   name: env.appName,
   slug: env.appSlug,
   description: "A sophisticated AI assistant with voice control, offline capabilities, and beautiful animations",
-  version: "2.0.4",
+  version: "2.0.5",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: env.scheme,
@@ -66,7 +66,7 @@ const config: ExpoConfig = {
     softwareKeyboardLayoutMode: "resize",
     predictiveBackGestureEnabled: false,
     package: env.androidPackage,
-    versionCode: 4,
+    versionCode: 5,
     permissions: ["POST_NOTIFICATIONS"],
     intentFilters: [
       {
