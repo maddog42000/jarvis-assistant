@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
 
 import { ScreenContainer } from '@/components/screen-container';
+import { GoogleConnectionCenter } from '@/components/google-connection-center';
 import { ConnectionResultCard } from '@/components/connection-result-card';
 import { PRESET_COMMANDS } from '@/components/voice-and-command-widgets';
 import { getProvider, PROVIDERS, type ProviderId } from '@/lib/assistant-config';
@@ -182,6 +183,9 @@ export default function SettingsScreen() {
             <Text className="text-xs text-muted mt-1">{hasApiKey ? 'Run Auto setup & test below to verify the key and model.' : 'Preset commands work without a provider key.'}</Text>
           </View>
         </View>
+
+        <SectionTitle icon="account-circle" title="Google connections" subtitle="Account identity and services, managed separately from Gemini API keys" />
+        <GoogleConnectionCenter />
 
         <SectionTitle icon="key" title="AI provider" subtitle="Keys stay local to this device" />
         <View className="bg-surface border border-border rounded-2xl p-4">
