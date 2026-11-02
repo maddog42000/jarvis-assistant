@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
+import * as Clipboard from 'expo-clipboard';
 
 import { ChatMessage } from '@/components/chat-message';
 import { JarvisAvatar } from '@/components/jarvis-avatar';
@@ -53,6 +54,13 @@ export default function ChatScreen() {
     };
   }, []);
 
+  const handleCopyChat = async () => {
+    if (!messages.length) return;
+    const transcript = messages.map((message) => `${message.role === 'user' ? 'You' : 'Jarvis'}:\n${message.content}`).join('\n\n');
+    await Clipboard.setStringAsync(transcript);
+    Alert.alert('Chat copied', 'The conversation is ready to paste.');
+  };
+
   const handleSend = async () => {
     const text = inputText.trim();
     if (!text || isLoading) return;
@@ -91,6 +99,7 @@ export default function ChatScreen() {
             <Text className="text-xs text-muted mt-0.5">Your assistant · private device history</Text>
           </View>
           <View className="items-end gap-1">
+            {messages.length > 0 && <Pressable onPress={() => void handleCopyChat()} hitSlop={8} accessibilityLabel="Copy entire chat" className="flex-row items-center gap-1 mb-1"><MaterialIcons name="content-copy" size={14} color="#18d5ff" /><Text className="text-[11px] text-primary">Copy chat</Text></Pressable>}
             <Pressable onPress={() => void checkConnection()} className="flex-row items-center gap-1" accessibilityLabel="Check internet status">
               <View className={`w-2 h-2 rounded-full ${connectionStatus === 'online' ? 'bg-success' : connectionStatus === 'offline' ? 'bg-error' : 'bg-warning'}`} />
               <Text className={`text-xs ${connectionStatus === 'online' ? 'text-success' : connectionStatus === 'offline' ? 'text-error' : 'text-warning'}`}>
@@ -116,7 +125,7 @@ export default function ChatScreen() {
                   Ask a question, try an offline command, or browse the quick actions below.
                 </Text>
                 <View className="w-full mt-7 bg-surface border border-border rounded-2xl p-4">
-                  <CommandCarousel onSelect={handleQuickAction} />
+                  <CommandCarousel onSelect={handleQuickAction} defaultExpanded={messages.length === 0} />
                 </View>
               </View>
             </ScrollView>

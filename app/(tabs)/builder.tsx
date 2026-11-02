@@ -263,7 +263,7 @@ export default function BuilderScreen() {
           <Text className="text-sm font-semibold text-foreground">Builder status</Text>
           <Text accessibilityLiveRegion="polite" className="text-xs text-muted leading-relaxed mt-1">{status}</Text>
         </View>
-        <Text className="text-xs text-muted leading-relaxed mt-4">Safety: each workflow is validated against Jarvis's allowlist and limited to 8 steps. A daily trigger currently creates a notification, not silent background app-control. Android may delay scheduled background work under battery optimization.</Text>
+        <Text className="text-xs text-muted leading-relaxed mt-4">Safety: each workflow is validated against Jarvis&apos;s allowlist and limited to 8 steps. A daily trigger currently creates a notification, not silent background app-control. Android may delay scheduled background work under battery optimization.</Text>
       </ScrollView>
     </ScreenContainer>
   );

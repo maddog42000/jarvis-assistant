@@ -24,15 +24,24 @@ export const OWNER_OPEN_ID = env.ownerId;
 export const OWNER_NAME = env.ownerName;
 export const API_BASE_URL = env.apiBaseUrl;
 
+export const hasConfiguredApiBaseUrl = (): boolean => getApiBaseUrl().length > 0;
+
 /**
  * Get the API base URL, deriving from current hostname if not set.
  * Metro runs on 8081, API server runs on 3000.
  * URL pattern: https://PORT-sandboxid.region.domain
  */
 export function getApiBaseUrl(): string {
-  // If API_BASE_URL is set, use it
+  // A standalone native APK cannot derive its backend from the Metro hostname.
+  // Accept only an absolute HTTP(S) URL so native requests never become "/api/trpc".
   if (API_BASE_URL) {
-    return API_BASE_URL.replace(/\/$/, "");
+    const configured = API_BASE_URL.trim().replace(/\/$/, "");
+    try {
+      const parsed = new URL(configured);
+      if (parsed.protocol === "https:" || parsed.protocol === "http:") return configured;
+    } catch {
+      // Invalid build-time configuration is treated as missing.
+    }
   }
 
   // On web, derive from current hostname by replacing port 8081 with 3000

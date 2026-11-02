@@ -15,6 +15,7 @@ import {
 import { useMemory } from '@/lib/memory-context';
 import { trpc } from '@/lib/trpc';
 import { buildServerAssistantInput, getServerFallbackNotice } from '@/lib/server-assistant';
+import { hasConfiguredApiBaseUrl } from '@/constants/oauth';
 import { runFallbackChain } from '@/lib/fallback-routing';
 import { normalizeCachedHistory, serializeCachedHistory, limitCachedHistory } from '@/lib/local-history';
 
@@ -221,6 +222,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   }, [apiConfig, updateApiConfig]);
 
   const testServerAssistant = useCallback(async () => {
+    if (!hasConfiguredApiBaseUrl()) {
+      return { ok: false, message: 'Jarvis online backup is not configured in this APK. Your own Gemini key can still connect directly from this device.' };
+    }
     try {
       const reply = await runFallbackChain([{
         id: 'Jarvis secure backup',
@@ -248,6 +252,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!apiConfig.apiKey.trim()) {
+        if (!hasConfiguredApiBaseUrl()) {
+          addMessage('assistant', getOfflineFallbackMessage());
+          return;
+        }
         try {
           const agent = getAgent(apiConfig);
           const result = await runFallbackChain([{
@@ -283,14 +291,14 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                 }
               },
             },
-          {
+          ...(hasConfiguredApiBaseUrl() ? [{
             id: 'Jarvis secure backup',
             run: async () => (await serverAssistant.mutateAsync(buildServerAssistantInput(
               agent.systemPrompt,
               [...messages.slice(-10), { role: 'user' as const, content }],
               memory,
             ))).content,
-          },
+          }] : []),
         ]);
         addMessage('assistant', result.used === 'Jarvis secure backup'
           ? `${getServerFallbackNotice(getProvider(apiConfig.providerId).name)}\n\n${result.value}`
@@ -431,14 +439,14 @@ async function readResponseOrThrow(response: Response, providerName: string) {
   return payload;
 }
 
-async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = 15000) {
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = 45000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(input, { ...init, signal: controller.signal });
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('The request timed out after 15 seconds.');
+      throw new Error('The request timed out after 45 seconds. Check your connection and provider key, then try again.');
     }
     throw error;
   } finally {
