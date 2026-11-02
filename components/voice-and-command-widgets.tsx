@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -33,14 +33,18 @@ export const PRESET_COMMANDS = [
   { label: 'Repeat', command: 'repeat that', icon: 'replay' as const, color: '#ff8a65' },
 ];
 
-export function CommandCarousel({ onSelect }: { onSelect: (command: string) => void }) {
+export function CommandCarousel({ onSelect, defaultExpanded = false }: { onSelect: (command: string) => void; defaultExpanded?: boolean }) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   return (
     <View>
-      <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-xs font-semibold uppercase tracking-widest text-muted">Quick commands</Text>
-        <Text className="text-xs text-muted">Swipe to explore</Text>
-      </View>
-      <FlatList
+      <Pressable onPress={() => setExpanded((value) => !value)} className="flex-row items-center justify-between mb-2 py-1" accessibilityRole="button" accessibilityLabel={expanded ? 'Hide quick commands' : 'Show quick commands'}>
+        <View className="flex-row items-center gap-2">
+          <Text className="text-xs font-semibold uppercase tracking-widest text-muted">Quick commands</Text>
+          <Text className="text-[11px] text-muted">{expanded ? 'Swipe to explore' : 'Tap to show'}</Text>
+        </View>
+        <MaterialIcons name={expanded ? 'expand-less' : 'expand-more'} size={20} color="#18d5ff" />
+      </Pressable>
+      {expanded && <FlatList
         data={PRESET_COMMANDS}
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -61,32 +65,40 @@ export function CommandCarousel({ onSelect }: { onSelect: (command: string) => v
             <Text className="text-xs text-muted mt-1" numberOfLines={1}>{item.command}</Text>
           </Pressable>
         )}
-      />
+      />}
     </View>
   );
 }
 
 export function SpeechPlayer() {
   const { isSpeaking, isPaused, currentText, progress, canPause, speak, restart, pauseOrResume, stop } = useTts();
+  const [expanded, setExpanded] = useState(false);
 
   if (!currentText) return null;
 
   return (
-    <View className="bg-primary/10 border border-primary/30 rounded-2xl p-3 mb-3">
-      <View className="flex-row items-center gap-2 mb-2">
+    <View className="bg-primary/10 border border-primary/30 rounded-2xl p-2 mb-2">
+      <View className="flex-row items-center gap-2">
+        <Pressable onPress={() => setExpanded((value) => !value)} className="flex-1 flex-row items-center gap-2" accessibilityRole="button" accessibilityLabel={expanded ? 'Collapse speech controls' : 'Expand speech controls'}>
         <View className="w-7 h-7 rounded-full bg-primary/20 items-center justify-center">
           <MaterialIcons name="volume-up" size={15} color="#18d5ff" />
         </View>
         <Text className="flex-1 text-xs font-semibold text-foreground" numberOfLines={1}>
           {isSpeaking ? 'Jarvis is speaking' : isPaused ? 'Speech paused' : 'Last response'}
         </Text>
-        <Pressable onPress={() => speak(currentText)} hitSlop={10}>
+        <MaterialIcons name={expanded ? 'expand-less' : 'expand-more'} size={18} color="#18d5ff" />
+        </Pressable>
+        <Pressable onPress={() => void (canPause ? pauseOrResume() : (isSpeaking ? stop() : restart()))} hitSlop={10} accessibilityLabel={isSpeaking && !isPaused ? 'Pause speech' : 'Play speech'}>
+          <MaterialIcons name={canPause && !isPaused ? 'pause' : 'play-arrow'} size={19} color="#18d5ff" />
+        </Pressable>
+        <Pressable onPress={() => speak(currentText)} hitSlop={10} accessibilityLabel="Replay speech">
           <MaterialIcons name="replay" size={18} color="#18d5ff" />
         </Pressable>
         <Pressable onPress={() => void stop()} hitSlop={10}>
           <MaterialIcons name="stop-circle" size={18} color="#ff6b78" />
         </Pressable>
       </View>
+      {expanded && <>
       <View className="h-1.5 rounded-full bg-primary/20 overflow-hidden">
         <View className="h-full rounded-full bg-primary" style={{ width: `${Math.max(progress * 100, 2)}%` }} />
       </View>
@@ -103,6 +115,7 @@ export function SpeechPlayer() {
           <Text className="text-xs font-semibold text-primary">{canPause && !isPaused ? 'Pause' : 'Play'}</Text>
         </Pressable>
       </View>
+      </>}
     </View>
   );
 }
