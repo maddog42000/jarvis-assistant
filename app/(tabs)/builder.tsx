@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { ScreenContainer } from '@/components/screen-container';
-import { ACTION_IDS, validateWorkflow, type ActionId, type ActionStep, type ActionWorkflow } from '@/lib/actions/action-engine';
+import { validateWorkflow, type ActionId, type ActionStep, type ActionWorkflow } from '@/lib/actions/action-engine';
 import { BUILT_IN_WORKFLOWS, importWorkflowJson } from '@/lib/actions/built-in-workflows';
 
 const WORKFLOW_STORAGE_KEY = 'jarvis_action_workflows_v1';
@@ -32,7 +32,7 @@ const ACTION_CHOICES: { id: ActionId; label: string; icon: keyof typeof Material
 ];
 
 function makeStep(action: ActionId, index: number): ActionStep {
-  const id = `step-${index + 1}`;
+  const id = `step-${Date.now()}-${index}`;
   switch (action) {
     case 'searchWeb': return { id, action, args: { query: 'weather today', provider: 'google' } };
     case 'openUrl': return { id, action, args: { url: 'https://calendar.google.com/' } };
@@ -90,10 +90,6 @@ export default function BuilderScreen() {
     }
   };
 
-  const updateStep = (index: number, patch: Partial<ActionStep>) => {
-    setSteps((current) => current.map((step, i) => i === index ? { ...step, ...patch, args: patch.args ?? step.args } : step));
-  };
-
   const updateArg = (index: number, key: string, value: string | number) => {
     setSteps((current) => current.map((step, i) => i === index ? { ...step, args: { ...step.args, [key]: value } } : step));
   };
@@ -122,7 +118,7 @@ export default function BuilderScreen() {
 
   const scheduleDaily = async () => {
     if (!selectedWorkflow) return;
-    const match = /^(?:[01]\\d|2[0-3]):[0-5]\\d$/.exec(scheduleTime.trim());
+    const match = /^(?:[01]\d|2[0-3]):[0-5]\d$/.exec(scheduleTime.trim());
     if (!match) {
       setStatus('Enter a 24-hour time such as 07:30 or 18:45.');
       return;
@@ -134,11 +130,13 @@ export default function BuilderScreen() {
       setStatus('Notifications are disabled. Allow Jarvis notifications in Android settings to create scheduled reminders.');
       return;
     }
-    await Notifications.setNotificationChannelAsync('jarvis-routines', {
-      name: 'Jarvis scheduled routines',
-      importance: Notifications.AndroidImportance.HIGH,
-      vibrationPattern: [0, 200, 150, 200],
-    });
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('jarvis-routines', {
+        name: 'Jarvis scheduled routines',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 200, 150, 200],
+      });
+    }
     const notificationId = await Notifications.scheduleNotificationAsync({
       content: {
         title: `Jarvis routine: ${selectedWorkflow.name}`,
