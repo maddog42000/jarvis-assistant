@@ -14,6 +14,7 @@ import { appendWorkflowActivity } from '@/lib/actions/action-history';
 const STORAGE_KEY = 'jarvis_action_workflows_v1';
 
 export default function ActionsScreen() {
+  const { workflowId } = useLocalSearchParams<{ workflowId?: string }>();
   const [workflows, setWorkflows] = useState<ActionWorkflow[]>(BUILT_IN_WORKFLOWS);
   const [selectedId, setSelectedId] = useState(BUILT_IN_WORKFLOWS[0]?.id ?? '');
   const [jsonDraft, setJsonDraft] = useState('');
