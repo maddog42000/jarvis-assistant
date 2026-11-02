@@ -97,6 +97,7 @@ export default function OnboardingScreen() {
               <FeatureRow icon="bolt" text="Offline commands work without an API key" />
               <FeatureRow icon="lock" text="Your settings stay on this device" />
               <FeatureRow icon="tune" text="You can change everything later" />
+              <FeatureRow icon="build-circle" text="Build your own routines and daily reminders" />
             </View>
           </View>
         )}
@@ -173,7 +174,7 @@ export default function OnboardingScreen() {
           <View className="flex-1 justify-center">
             <Text className="text-3xl font-bold text-foreground">You are ready</Text>
             <Text className="text-base text-muted leading-relaxed mt-3 mb-8">
-              Ask Jarvis for help, tap a preset command, or open Settings anytime to change your connection.
+              Ask Jarvis for help, build your own routines in Automation Builder, schedule daily reminders, or open Settings anytime to change your connection.
             </Text>
             <View className="gap-3">
               <Checklist text="Offline commands are available immediately" />
