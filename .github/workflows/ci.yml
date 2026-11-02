@@ -2,7 +2,7 @@ name: Jarvis validation
 
 on:
   push:
-    branches: [main, "codex/**"]
+    branches: [main, "codex/**", "jarvis-3.1/**", "jarvis-3.2/**"]
   pull_request:
     branches: [main]
   workflow_dispatch:

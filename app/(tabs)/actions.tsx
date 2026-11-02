@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
 import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
@@ -8,6 +9,7 @@ import { ScreenContainer } from '@/components/screen-container';
 import { BUILT_IN_WORKFLOWS, exportWorkflowJson, importWorkflowJson } from '@/lib/actions/built-in-workflows';
 import { runWorkflow, type ActionWorkflow } from '@/lib/actions/action-engine';
 import { createExpoActionHandlers } from '@/lib/actions/expo-action-adapter';
+import { appendWorkflowActivity } from '@/lib/actions/action-history';
 
 const STORAGE_KEY = 'jarvis_action_workflows_v1';
 
@@ -38,6 +40,15 @@ export default function ActionsScreen() {
   }, []);
 
   const selected = useMemo(() => workflows.find((workflow) => workflow.id === selectedId) ?? workflows[0], [selectedId, workflows]);
+
+  useEffect(() => {
+    if (typeof workflowId !== 'string') return;
+    const scheduled = workflows.find((workflow) => workflow.id === workflowId);
+    if (scheduled) {
+      setSelectedId(scheduled.id);
+      setStatus(`Opened from its scheduled reminder. Review "${scheduled.name}" and tap Run when you're ready.`);
+    }
+  }, [workflowId, workflows]);
 
   useEffect(() => {
     if (selected) setJsonDraft(exportWorkflowJson(selected));
@@ -113,8 +124,37 @@ export default function ActionsScreen() {
       setStatus(result.ok
         ? `Success: ${result.message}`
         : `Stopped after ${result.completed} completed step(s): ${result.message}`);
+      try {
+        await appendWorkflowActivity({
+          id: `${Date.now()}-${workflow.id}`,
+          workflowId: workflow.id,
+          workflowName: workflow.name,
+          createdAt: new Date().toISOString(),
+          success: result.ok,
+          completedSteps: result.completed,
+          totalSteps: workflow.steps.length,
+          message: result.message,
+        });
+      } catch {
+        setStatus((current) => `${current} Activity history could not be saved.`);
+      }
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Workflow failed.');
+      const message = error instanceof Error ? error.message : 'Workflow failed.';
+      setStatus(message);
+      try {
+        await appendWorkflowActivity({
+          id: `${Date.now()}-${workflow.id}`,
+          workflowId: workflow.id,
+          workflowName: workflow.name,
+          createdAt: new Date().toISOString(),
+          success: false,
+          completedSteps: 0,
+          totalSteps: workflow.steps.length,
+          message,
+        });
+      } catch {
+        // Activity history is best-effort and must not interrupt the workflow UI.
+      }
     } finally {
       setBusy(false);
     }

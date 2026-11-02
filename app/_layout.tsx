@@ -1,6 +1,7 @@
 import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
+import * as Notifications from "expo-notifications";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { Component, useCallback, useEffect, useMemo, useState } from "react";
@@ -77,6 +78,18 @@ export default function RootLayout() {
   useEffect(() => {
     // Do not let a slow native provider keep Android's splash screen visible.
     void SplashScreen.hideAsync();
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const openScheduledWorkflow = (response: Notifications.NotificationResponse | null) => {
+      const data = response?.notification.request.content.data;
+      if (data?.kind !== "scheduled-routine" || typeof data.workflowId !== "string") return;
+      router.push({ pathname: "/(tabs)/actions", params: { workflowId: data.workflowId } });
+    };
+    const subscription = Notifications.addNotificationResponseReceivedListener(openScheduledWorkflow);
+    void Notifications.getLastNotificationResponseAsync().then(openScheduledWorkflow).catch(() => undefined);
+    return () => subscription.remove();
   }, []);
 
   const handleSafeAreaUpdate = useCallback((metrics: Metrics) => {
