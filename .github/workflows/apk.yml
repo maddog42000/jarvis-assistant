@@ -6,6 +6,7 @@ on:
     branches:
       - "jarvis-3.0/voice-ui-foundation"
       - "jarvis-3.4.1/android-domexception-fix"
+      - "jarvis-3.5/**"
     tags:
       - "apk-v*"
 
