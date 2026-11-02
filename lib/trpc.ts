@@ -22,7 +22,9 @@ export function createTRPCClient() {
   return trpc.createClient({
     links: [
       httpBatchLink({
-        url: `${getApiBaseUrl()}/api/trpc`,
+        // Keep the client URL absolute when a standalone APK has no backend configured.
+        // Chat routing checks hasConfiguredApiBaseUrl() before invoking this endpoint.
+        url: `${getApiBaseUrl() || "https://api-not-configured.invalid"}/api/trpc`,
         // tRPC v11: transformer MUST be inside httpBatchLink, not at root
         transformer: superjson,
         async headers() {
