@@ -7,6 +7,7 @@ on:
       - "jarvis-3.0/voice-ui-foundation"
       - "jarvis-3.4.1/android-domexception-fix"
       - "jarvis-3.5/**"
+      - "jarvis-3.6/**"
     tags:
       - "apk-v*"
 
