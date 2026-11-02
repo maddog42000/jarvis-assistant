@@ -19,6 +19,31 @@ export const BUILT_IN_WORKFLOWS: ActionWorkflow[] = [
     name: 'Open Gemini',
     steps: [{ id: 'launch-gemini', action: 'openApp', args: { app: 'gemini' } }],
   },
+  {
+    id: 'morning-dashboard',
+    name: 'Morning dashboard',
+    steps: [
+      { id: 'weather', action: 'searchWeb', args: { query: 'local weather today', provider: 'google' } },
+      { id: 'calendar', action: 'openUrl', args: { url: 'https://calendar.google.com/calendar/u/0/r' }, delayMs: 400 },
+      { id: 'inbox', action: 'openUrl', args: { url: 'https://mail.google.com/' }, delayMs: 400 },
+    ],
+  },
+  {
+    id: 'focus-session',
+    name: 'Focus session',
+    steps: [
+      { id: 'start-timer', action: 'openClock', args: { kind: 'timer' } },
+      { id: 'focus-audio', action: 'searchWeb', args: { query: 'ambient focus music', provider: 'google' }, delayMs: 500 },
+    ],
+  },
+  {
+    id: 'evening-wind-down',
+    name: 'Evening wind-down',
+    steps: [
+      { id: 'relaxation-guide', action: 'searchWeb', args: { query: 'guided breathing relaxation exercise', provider: 'google' } },
+      { id: 'sleep-timer', action: 'openClock', args: { kind: 'timer' }, delayMs: 500 },
+    ],
+  },
 ];
 
 export function exportWorkflowJson(workflow: ActionWorkflow): string {
