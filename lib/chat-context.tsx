@@ -1,3 +1,4 @@
+import { isAbortError } from './abort-error';
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -437,7 +438,7 @@ async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}
   try {
     return await fetch(input, { ...init, signal: controller.signal });
   } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
+    if (isAbortError(error)) {
       throw new Error('The request timed out after 15 seconds.');
     }
     throw error;
