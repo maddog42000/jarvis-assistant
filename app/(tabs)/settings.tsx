@@ -200,12 +200,13 @@ export default function SettingsScreen() {
 
           <View className="bg-background border border-border rounded-xl p-3 mt-4">
             <Text className="text-sm font-semibold text-foreground">2. Get your key</Text>
-            <Text className="text-xs text-muted leading-relaxed mt-1">Open the official provider page, create a key, copy it, return here, and paste it below. Jarvis never ships with a key.</Text>
+            <Text className="text-xs text-muted leading-relaxed mt-1">For Gemini, tap below to open Google AI Studio. Sign in with your Google account, create a Gemini API key, copy it, then return here and tap Paste key. Jarvis never ships with a key.</Text>
             <Pressable onPress={() => void Linking.openURL(provider.keyUrl)} style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]} className="flex-row items-center gap-2 mt-3">
               <MaterialIcons name="open-in-new" size={15} color="#18d5ff" />
-              <Text className="text-xs font-semibold text-primary">Open {provider.name} key page</Text>
+              <Text className="text-xs font-semibold text-primary">{providerId === 'gemini' ? 'Sign in to Google & create Gemini key' : `Open ${provider.name} key page`}</Text>
             </Pressable>
             <Text className="text-[11px] text-muted mt-2">Free-tier note: {provider.freeTierNote}</Text>
+          {providerId === 'gemini' && <Text className="text-[11px] text-muted leading-relaxed mt-2">This signs you into Google AI Studio to create the API key. It does not yet link Gmail, Calendar, or Drive inside Jarvis. Full Google account authorization needs a separately configured Android OAuth client.</Text>}
           </View>
 
           <Text className="text-sm font-semibold text-foreground mt-4 mb-2">3. Paste the key</Text>
