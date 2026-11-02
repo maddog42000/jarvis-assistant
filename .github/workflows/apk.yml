@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - "jarvis-3.0/voice-ui-foundation"
+      - "jarvis-3.1/automation-activity-google-foundation"
     tags:
       - "apk-v*"
 
