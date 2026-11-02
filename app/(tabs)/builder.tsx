@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
@@ -61,11 +61,7 @@ export default function BuilderScreen() {
   const allWorkflows = useMemo(() => [...BUILT_IN_WORKFLOWS, ...saved], [saved]);
   const selectedWorkflow = allWorkflows.find((item) => item.id === selectedWorkflowId) ?? allWorkflows[0];
 
-  useEffect(() => {
-    void loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [rawWorkflows, rawSchedules] = await Promise.all([
         AsyncStorage.getItem(WORKFLOW_STORAGE_KEY),
@@ -88,7 +84,11 @@ export default function BuilderScreen() {
     } catch {
       setStatus('Some saved automation data could not be loaded. You can still build a new routine.');
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   const updateArg = (index: number, key: string, value: string | number) => {
     setSteps((current) => current.map((step, i) => i === index ? { ...step, args: { ...step.args, [key]: value } } : step));
