@@ -67,12 +67,18 @@ class JarvisAutomationModule : Module() {
       }
     }
 
-    AsyncFunction("openClock") { kind: String ->
+    AsyncFunction("openClock") { kind: String, seconds: Int ->
       require(kind == "alarm" || kind == "timer") { "Clock action must be alarm or timer." }
       val activity = appContext.currentActivity
         ?: throw IllegalStateException("Jarvis needs an active screen to open Clock.")
       val action = if (kind == "timer") android.provider.AlarmClock.ACTION_SET_TIMER else android.provider.AlarmClock.ACTION_SET_ALARM
       val intent = Intent(action)
+      if (kind == "timer" && seconds > 0) {
+        require(seconds in 1..86400) { "Timer length must be 1-86400 seconds." }
+        intent.putExtra(android.provider.AlarmClock.EXTRA_LENGTH, seconds)
+        intent.putExtra(android.provider.AlarmClock.EXTRA_SKIP_UI, false)
+        intent.putExtra(android.provider.AlarmClock.EXTRA_MESSAGE, "Jarvis focus timer")
+      }
       if (intent.resolveActivity(activity.packageManager) == null) {
         throw IllegalStateException("No Clock app accepted the $kind request.")
       }
