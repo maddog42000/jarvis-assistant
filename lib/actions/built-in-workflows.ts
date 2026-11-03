@@ -19,26 +19,17 @@ export const BUILT_IN_WORKFLOWS: ActionWorkflow[] = [
   {
     id: 'start-focus-timer',
     name: 'Start a 25-minute focus timer',
-    steps: [{ id: 'focus-timer', action: 'openClock', args: { kind: 'timer' } }],
+    steps: [{ id: 'focus-timer', action: 'openClock', args: { kind: 'timer', seconds: 1500 } }],
   },
   {
     id: 'morning-dashboard',
-    name: 'Morning dashboard',
+    name: 'Morning brief: weather and news',
     steps: [
       { id: 'weather', action: 'searchWeb', args: { query: 'weather today', provider: 'google' } },
       { id: 'news', action: 'searchWeb', args: { query: 'top news today', provider: 'google' }, delayMs: 500 },
-      { id: 'calendar', action: 'openApp', args: { app: 'google' }, delayMs: 500 },
     ],
   },
 
-  {
-    id: 'morning-brief',
-    name: 'Morning search',
-    steps: [
-      { id: 'open-weather-search', action: 'searchWeb', args: { query: 'weather today', provider: 'google' } },
-      { id: 'open-news-search', action: 'searchWeb', args: { query: 'latest news today', provider: 'google' }, delayMs: 500 },
-    ],
-  },
   {
     id: 'enable-screen-actions',
     name: 'Open Accessibility Settings',
