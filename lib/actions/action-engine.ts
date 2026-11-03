@@ -12,7 +12,7 @@ export type ActionArguments = {
   openUrl: { url: string };
   searchWeb: { query: string; provider?: 'google' | 'bing' | 'duckduckgo' };
   setReminder: { title: string; at: string };
-  openClock: { kind?: 'alarm' | 'timer' };
+  openClock: { kind?: 'alarm' | 'timer'; seconds?: number };
   openApp: { app: 'google' | 'gemini' | 'chrome' | 'bixby' };
   openAccessibilitySettings: Record<string, never>;
   setAlarm: { hour: number; minute: number; label?: string };
@@ -93,6 +93,8 @@ export function validateActionStep(input: unknown): { ok: true; step: ActionStep
     }
     case 'openClock':
       if (args.kind !== undefined && !['alarm', 'timer'].includes(String(args.kind))) return { ok: false, error: 'Clock action must be alarm or timer.' };
+      if (args.seconds !== undefined && (typeof args.seconds !== 'number' || !Number.isInteger(args.seconds) || args.seconds < 1 || args.seconds > 86400)) return { ok: false, error: 'Timer length must be 1-86400 seconds.' };
+      if (args.seconds !== undefined && args.kind !== 'timer') return { ok: false, error: 'Timer length can only be used with a timer action.' };
       break;
     case 'openApp':
       if (!['google', 'gemini', 'chrome', 'bixby'].includes(String(args.app))) return { ok: false, error: 'This app shortcut is not supported.' };
