@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
+import Constants from 'expo-constants';
 
 import { ScreenContainer } from '@/components/screen-container';
 import { GoogleConnectionCenter } from '@/components/google-connection-center';
@@ -359,7 +360,7 @@ export default function SettingsScreen() {
           <ActionRow icon="delete-outline" danger title="Clear chat history" description="Remove saved conversations from this device" onPress={confirmClear} />
         </View>
 
-        <Text className="text-xs text-muted text-center mt-8">Jarvis v1.0.5 · {Platform.OS === 'android' ? 'Android' : 'iOS'} · Offline first</Text>
+        <Text className="text-xs text-muted text-center mt-8">Jarvis v{Constants.expoConfig?.version ?? 'unknown'} · {Platform.OS === 'android' ? 'Android' : 'iOS'} · Offline first</Text>
       </ScrollView>
     </ScreenContainer>
   );
