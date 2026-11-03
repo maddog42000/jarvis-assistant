@@ -7,7 +7,7 @@ import type { ActionHandler, ActionId } from './action-engine';
 type NativeAutomation = {
   openAccessibilitySettings: () => Promise<boolean>;
   openApp: (app: string) => Promise<boolean>;
-  openClock: (kind: string) => Promise<boolean>;
+  openClock: (kind: string, seconds: number) => Promise<boolean>;
   setAlarm: (hour: number, minute: number, label: string) => Promise<boolean>;
   isAccessibilityServiceEnabled: () => boolean;
   clickVisibleText: (label: string) => Promise<boolean>;
@@ -111,8 +111,8 @@ export function createExpoActionHandlers(): Partial<Record<ActionId, ActionHandl
       if (Platform.OS !== 'android' || !nativeAutomation) return { ok: false, message: 'Direct Clock intents require the installed Android Jarvis build. Open Clock manually in this preview.' };
       const kind = args.kind === 'timer' ? 'timer' : 'alarm';
       try {
-        await nativeAutomation.openClock(kind);
-        return { ok: true, message: `Opened Android Clock for a ${kind}. Review and confirm the details in Clock.` };
+        await nativeAutomation.openClock(kind, Number(args.seconds ?? 0));
+        return { ok: true, message: kind === 'timer' && Number(args.seconds) > 0 ? `Opened Android Clock with a ${Math.round(Number(args.seconds) / 60)}-minute timer ready. Confirm it in Clock.` : `Opened Android Clock for a ${kind}. Review and confirm the details in Clock.` };
       } catch (error) {
         return { ok: false, message: error instanceof Error ? error.message : `Could not open Clock for a ${kind}.` };
       }
