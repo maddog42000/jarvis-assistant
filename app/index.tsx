@@ -43,9 +43,19 @@ function FallingObject({
   onHit: () => void;
 }) {
   const fall = useRef(new Animated.Value(0)).current;
+  const bob = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
   const scale = useRef(new Animated.Value(1)).current;
   const [fallen, setFallen] = useState(false);
+
+  useEffect(() => {
+    const animation = Animated.loop(Animated.sequence([
+      Animated.timing(bob, { toValue: 1, duration: 650 + index * 90, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      Animated.timing(bob, { toValue: 0, duration: 650 + index * 90, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+    ]));
+    animation.start();
+    return () => animation.stop();
+  }, [bob, index]);
 
   const fallApart = () => {
     if (fallen) return;
@@ -81,6 +91,7 @@ function FallingObject({
           opacity,
           transform: [
             { translateX: fall.interpolate({ inputRange: [0, 1], outputRange: [0, object.drift] }) },
+            { translateY: bob.interpolate({ inputRange: [0, 1], outputRange: [-8, 8] }) },
             { translateY: fall.interpolate({ inputRange: [0, 1], outputRange: [0, 170] }) },
             { rotate: fall.interpolate({ inputRange: [0, 1], outputRange: ["0deg", object.rotate] }) },
             { scale },
