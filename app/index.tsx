@@ -36,9 +36,11 @@ export default function EntryRoute() {
 function FallingObject({
   object,
   index,
+  onHit,
 }: {
   object: (typeof OBJECTS)[number];
   index: number;
+  onHit: () => void;
 }) {
   const fall = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
@@ -48,6 +50,7 @@ function FallingObject({
   const fallApart = () => {
     if (fallen) return;
     setFallen(true);
+    onHit();
     Animated.parallel([
       Animated.timing(fall, {
         toValue: 1,
@@ -101,6 +104,7 @@ export function LoadingEntryRoute({
 }) {
   const [progress, setProgress] = useState(4);
   const [elapsed, setElapsed] = useState(0);
+  const [score, setScore] = useState(0);
 
   useEffect(() => {
     const startedAt = Date.now();
@@ -123,10 +127,10 @@ export function LoadingEntryRoute({
     <View style={styles.screen}>
       <View pointerEvents="none" style={styles.scanLine} />
       <View style={styles.header}>
-        <Text style={styles.kicker}>JARVIS // SYSTEM BOOT</Text>
-        <Text style={styles.title}>LAUNCH BAY</Text>
+        <Text style={styles.kicker}>JARVIS // DEFENSE PROTOCOL</Text>
+        <Text style={styles.title}>SMASH THE DRONES</Text>
         <Text style={styles.subtitle}>
-          {ready ? "Core systems are online." : "Tap the floating nodes while Jarvis wakes up."}
+          {ready ? "Core systems are online. Clear the last targets." : "Tap the flying JARVIS drones to blast them apart."}
         </Text>
       </View>
 
@@ -134,11 +138,12 @@ export function LoadingEntryRoute({
         <View style={styles.ringOuter} />
         <View style={styles.ringInner} />
         {OBJECTS.map((object, index) => (
-          <FallingObject key={`${object.label}-${index}`} object={object} index={index} />
+          <FallingObject key={`${object.label}-${index}`} object={object} index={index} onHit={() => setScore((value) => value + 1)} />
         ))}
         <View style={styles.core}>
           <Text style={styles.coreText}>{ready ? "READY" : `${progress}%`}</Text>
           <Text style={styles.coreCaption}>{ready ? "TO LAUNCH" : "BOOTING"}</Text>
+          <Text style={styles.scoreText}>DRONES {score}/6</Text>
         </View>
       </View>
 
@@ -179,6 +184,7 @@ const styles = StyleSheet.create({
   core: { position: "absolute", alignSelf: "center", top: "42%", width: 100, height: 100, borderRadius: 50, backgroundColor: "#0e1d2a", borderWidth: 2, borderColor: "#18d5ff", alignItems: "center", justifyContent: "center", shadowColor: "#18d5ff", shadowOpacity: 0.55, shadowRadius: 18, shadowOffset: { width: 0, height: 0 }, elevation: 8 },
   coreText: { color: "#effcff", fontSize: 18, fontWeight: "800", letterSpacing: 1 },
   coreCaption: { color: "#18d5ff", fontSize: 9, fontWeight: "700", letterSpacing: 1.3, marginTop: 4 },
+  scoreText: { color: "#a979ff", fontSize: 8, fontWeight: "800", marginTop: 5, letterSpacing: 0.8 },
   objectHit: { position: "absolute", width: 58, height: 58, marginLeft: -29, marginTop: -29, alignItems: "center", justifyContent: "center" },
   object: { width: 46, height: 46, borderRadius: 14, borderWidth: 1.5, backgroundColor: "rgba(11,25,37,0.92)", alignItems: "center", justifyContent: "center", shadowOpacity: 0.55, shadowRadius: 12, shadowOffset: { width: 0, height: 0 }, elevation: 6 },
   objectLabel: { fontSize: 20, fontWeight: "800" },
