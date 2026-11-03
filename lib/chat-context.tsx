@@ -1,6 +1,7 @@
 import { isAbortError } from './abort-error';
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 import {
@@ -124,7 +125,14 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const loadApiConfig = useCallback(async () => {
     try {
-      const stored = await AsyncStorage.getItem(API_CONFIG_KEY);
+      let stored = await SecureStore.getItemAsync(API_CONFIG_KEY);
+      if (!stored) {
+        stored = await AsyncStorage.getItem(API_CONFIG_KEY);
+        if (stored) {
+          await SecureStore.setItemAsync(API_CONFIG_KEY, stored);
+          await AsyncStorage.removeItem(API_CONFIG_KEY);
+        }
+      }
       if (stored) setApiConfig(normalizeStoredConfig(JSON.parse(stored)));
     } catch (error) {
       console.error('Failed to load API config:', error);
@@ -177,9 +185,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       return updatedConfig;
     });
     try {
-      await AsyncStorage.setItem(API_CONFIG_KEY, JSON.stringify(updatedConfig));
+      await SecureStore.setItemAsync(API_CONFIG_KEY, JSON.stringify(updatedConfig));
     } catch (error) {
-      console.error('Failed to save API config:', error);
+      console.error('Failed to save API config securely:', error);
+      throw new Error('Jarvis could not securely save this provider key. Please check device lock/security settings and try again.');
     }
   }, []);
 
