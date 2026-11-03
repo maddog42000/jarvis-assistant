@@ -2,6 +2,36 @@ import { validateWorkflow, type ActionWorkflow } from './action-engine';
 
 export const BUILT_IN_WORKFLOWS: ActionWorkflow[] = [
   {
+    id: 'launch-google',
+    name: 'Open Google',
+    steps: [{ id: 'open-google', action: 'openApp', args: { app: 'google' } }],
+  },
+  {
+    id: 'launch-chrome',
+    name: 'Open Chrome',
+    steps: [{ id: 'open-chrome', action: 'openApp', args: { app: 'chrome' } }],
+  },
+  {
+    id: 'launch-bixby',
+    name: 'Open Bixby',
+    steps: [{ id: 'open-bixby', action: 'openApp', args: { app: 'bixby' } }],
+  },
+  {
+    id: 'start-focus-timer',
+    name: 'Start a 25-minute focus timer',
+    steps: [{ id: 'focus-timer', action: 'openClock', args: { kind: 'timer' } }],
+  },
+  {
+    id: 'morning-dashboard',
+    name: 'Morning dashboard',
+    steps: [
+      { id: 'weather', action: 'searchWeb', args: { query: 'weather today', provider: 'google' } },
+      { id: 'news', action: 'searchWeb', args: { query: 'top news today', provider: 'google' }, delayMs: 500 },
+      { id: 'calendar', action: 'openApp', args: { app: 'google' }, delayMs: 500 },
+    ],
+  },
+
+  {
     id: 'morning-brief',
     name: 'Morning search',
     steps: [
