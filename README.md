@@ -6,7 +6,9 @@ Jarvis Assistant is an Expo SDK 54 / React Native app focused on offline-first c
 
 - Chat UI and local conversation history (AsyncStorage).
 - Offline command handling and fallback guidance.
-- Optional user-configured AI provider keys for Google Gemini, OpenAI-compatible endpoints, Anthropic-compatible endpoints, and custom compatible endpoints.
+- Optional user-configured AI provider keys for Google Gemini, OpenAI (GPT), Anthropic, and custom OpenAI-compatible endpoints.
+- Android provider keys stored with Expo SecureStore, with migration of existing saved provider configuration on upgrade.
+- Android app shortcuts for Google, Gemini, Chrome, and Bixby (launches the installed app when available, otherwise opens its web page), plus native Clock intents and preset focus timers.
 - Optional server-side AI fallback through the `assistant.complete` tRPC procedure when the backend is deployed and configured.
 - Text-to-speech via `expo-speech`, including voice/rate/pitch preferences where supported by the device.
 - Onboarding, provider connection tests, settings, and local companion notes.
@@ -53,13 +55,15 @@ The repository's GitHub Actions workflow runs the type check, automated tests, f
 
 ## Configure an AI provider
 
-1. Install and launch the app.
-2. Open **Settings → AI provider**.
+1. Install and launch the app. First-run onboarding lets you choose an AI provider or skip into offline mode.
+2. Open **Settings → AI provider** anytime to change providers or replace a key.
 3. Select Google Gemini or another supported provider.
-4. Paste your own API key into the app and run **Auto setup & test**.
-5. Save the setup after the connection test succeeds.
+4. Copy the key, return to Jarvis, tap **Paste key**, then **Auto setup & test** (Gemini model discovery is automatic).
+5. Jarvis saves the provider configuration after a successful test. You can restart onboarding from Settings without deleting chat history.
 
-Provider API keys entered in the app are stored on the device using the app's current configuration persistence. Treat a device backup or a compromised device accordingly. Do not paste API keys into source files, screenshots, issue reports, or commits.
+On Android, provider API keys are stored with Expo SecureStore backed by Android Keystore. Existing saved configuration is migrated from AsyncStorage on upgrade. The web preview uses browser-side AsyncStorage and should not be treated as secure key storage. Do not paste API keys into source files, screenshots, issue reports, or commits.
+
+Gemini API keys enable Gemini chat only. They do not sign the user into a Google account. Gmail, Calendar, Drive, and Contacts require a separate owner-configured Google OAuth integration and remain unavailable until that setup is completed.
 
 ## Backend environment
 

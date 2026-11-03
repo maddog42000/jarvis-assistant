@@ -32,7 +32,7 @@ export const CURRENT_GEMINI_MODEL = 'gemini-3.8-flash';
 export const PROVIDERS: ProviderDefinition[] = [
   {
     id: 'openai',
-    name: 'OpenAI',
+    name: 'OpenAI (GPT)',
     description: 'OpenAI Chat Completions and compatible endpoints.',
     endpoint: 'https://api.openai.com/v1',
     model: 'gpt-4o-mini',

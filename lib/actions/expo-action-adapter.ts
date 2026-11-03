@@ -6,6 +6,8 @@ import type { ActionHandler, ActionId } from './action-engine';
 
 type NativeAutomation = {
   openAccessibilitySettings: () => Promise<boolean>;
+  openApp: (app: string) => Promise<boolean>;
+  openClock: (kind: string, seconds: number) => Promise<boolean>;
   setAlarm: (hour: number, minute: number, label: string) => Promise<boolean>;
   isAccessibilityServiceEnabled: () => boolean;
   clickVisibleText: (label: string) => Promise<boolean>;
@@ -106,19 +108,27 @@ export function createExpoActionHandlers(): Partial<Record<ActionId, ActionHandl
     },
     setReminder: scheduleReminder,
     openClock: async (args) => {
-      if (Platform.OS !== 'android') return { ok: false, message: 'Direct Clock app launch is currently Android-only. Open the Clock app manually on this device.' };
+      if (Platform.OS !== 'android' || !nativeAutomation) return { ok: false, message: 'Direct Clock intents require the installed Android Jarvis build. Open Clock manually in this preview.' };
       const kind = args.kind === 'timer' ? 'timer' : 'alarm';
-      const intentUri = kind === 'timer'
-        ? 'intent:#Intent;action=android.intent.action.SET_TIMER;end'
-        : 'intent:#Intent;action=android.intent.action.SET_ALARM;end';
       try {
-        await Linking.openURL(intentUri);
-        return { ok: true, message: `Requested that Android open Clock for a ${kind}.` };
-      } catch {
-        return { ok: false, message: `Android did not accept the Clock ${kind} intent on this device. Open Clock manually; a native Android intent bridge may be needed for your phone's Clock app.` };
+        await nativeAutomation.openClock(kind, Number(args.seconds ?? 0));
+        return { ok: true, message: kind === 'timer' && Number(args.seconds) > 0 ? `Opened Android Clock with a ${Math.round(Number(args.seconds) / 60)}-minute timer ready. Confirm it in Clock.` : `Opened Android Clock for a ${kind}. Review and confirm the details in Clock.` };
+      } catch (error) {
+        return { ok: false, message: error instanceof Error ? error.message : `Could not open Clock for a ${kind}.` };
       }
     },
-    openApp: async (args) => openFirstAvailable(APP_URLS[String(args.app)] ?? []),
+    openApp: async (args) => {
+      const app = String(args.app);
+      if (Platform.OS === 'android' && nativeAutomation) {
+        try {
+          const launched = await nativeAutomation.openApp(app);
+          return { ok: true, message: launched ? `Opened the installed ${app} app.` : `The ${app} app was not found; opened its official web page instead.` };
+        } catch (error) {
+          return { ok: false, message: error instanceof Error ? error.message : `Could not open ${app}.` };
+        }
+      }
+      return openFirstAvailable(APP_URLS[app] ?? []);
+    },
     setAlarm: async (args) => {
       if (!nativeAutomation) return { ok: false, message: 'Setting a precise Android alarm requires a native Android build with the Jarvis automation module.' };
       try {

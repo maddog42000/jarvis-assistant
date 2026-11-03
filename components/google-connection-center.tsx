@@ -24,13 +24,13 @@ export function GoogleConnectionCenter() {
       </View>
 
       <Text className="text-xs text-muted leading-relaxed mt-3">
-        Google sign-in is being prepared separately from your Gemini API key. Jarvis will only show an account as connected after its identity token is verified securely.
+        You do not need Google account sign-in to use Gemini. Choose Google Gemini under AI provider and paste a key from Google AI Studio to enable AI chat. Google account sign-in is a separate integration and is not enabled in this build.
       </Text>
 
       <View className="bg-background border border-border rounded-xl p-3 mt-3">
-        <Text className="text-sm font-semibold text-foreground">Owner setup needed</Text>
+        <Text className="text-sm font-semibold text-foreground">Google account services are not active yet</Text>
         <Text className="text-xs text-muted leading-relaxed mt-1">
-          Create an Android OAuth client in Google Cloud for com.app.jarvisassistant and register the signing certificate used by the release APK. The app cannot complete sign-in until that client configuration is supplied.
+          Gmail, Calendar, Drive, and Contacts require a verified Google OAuth configuration and service-specific permissions. Until that owner setup is complete, these services remain disconnected. This does not affect Gemini API-key chat or offline phone actions.
         </Text>
         <Pressable
           onPress={() => void Linking.openURL('https://console.cloud.google.com/apis/credentials')}
@@ -38,7 +38,7 @@ export function GoogleConnectionCenter() {
           className="flex-row items-center gap-2 mt-3"
         >
           <MaterialIcons name="open-in-new" size={16} color="#18d5ff" />
-          <Text className="text-xs font-semibold text-primary">Open Google Cloud credentials</Text>
+          <Text className="text-xs font-semibold text-primary">Google Cloud OAuth setup</Text>
         </Pressable>
       </View>
 

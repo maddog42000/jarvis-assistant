@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -24,6 +25,16 @@ export default function OnboardingScreen() {
   const finish = async () => {
     await completeOnboarding();
     router.replace('/(tabs)/chat');
+  };
+
+  const pasteKey = async () => {
+    try {
+      const copied = (await Clipboard.getStringAsync()).trim();
+      if (!copied) { Alert.alert('Clipboard is empty', 'Copy your provider API key first, then tap Paste key.'); return; }
+      setApiKey(copied);
+      setVerificationStatus('idle');
+      setVerificationMessage('Key pasted. Tap Verify key to test and save it.');
+    } catch { Alert.alert('Paste unavailable', 'Paste the API key directly into the field.'); }
   };
 
   const verifyKey = async () => {
@@ -106,7 +117,7 @@ export default function OnboardingScreen() {
           <View className="flex-1 justify-center">
             <Text className="text-3xl font-bold text-foreground">Choose your mode</Text>
             <Text className="text-base text-muted leading-relaxed mt-3 mb-6">
-              Gemini is selected by default. Add one Gemini API key to enable live AI chat. No Google Cloud sign-in or Gmail permissions are needed for this.
+              Choose Gemini, OpenAI (GPT), Anthropic, or a compatible custom provider. Paste that provider’s API key to enable live AI chat. Google account sign-in and Gmail access are separate optional integrations.
             </Text>
             <View className="gap-3">
               <ModeCard icon="offline-bolt" title="Offline first" description="Time, date, battery, network, jokes, quotes, help, and more." active />
@@ -114,7 +125,7 @@ export default function OnboardingScreen() {
             </View>
             <Text className="text-sm font-semibold text-foreground mt-7 mb-2">AI provider (Gemini recommended)</Text>
             <View className="gap-2">
-              {[...PROVIDERS].sort((a, b) => a.id === 'gemini' ? -1 : b.id === 'gemini' ? 1 : 0).slice(0, 3).map((provider) => (
+              {[...PROVIDERS].sort((a, b) => a.id === 'gemini' ? -1 : b.id === 'gemini' ? 1 : 0).map((provider) => (
                 <Pressable key={provider.id} onPress={() => { setProviderId(provider.id); setApiKey(''); setVerificationStatus('idle'); setVerificationMessage(''); }} style={({ pressed }) => [{ opacity: pressed ? 0.78 : 1 }]} className={`rounded-xl border p-3 flex-row items-center gap-3 ${providerId === provider.id ? 'border-primary bg-primary/10' : 'border-border bg-surface'}`}>
                   <MaterialIcons name={providerId === provider.id ? 'radio-button-checked' : 'radio-button-unchecked'} size={20} color={providerId === provider.id ? '#18d5ff' : '#77808c'} />
                   <View className="flex-1"><Text className="text-sm font-semibold text-foreground">{provider.name}</Text><Text className="text-xs text-muted mt-1">{provider.description}</Text></View>
@@ -134,7 +145,7 @@ export default function OnboardingScreen() {
           <View className="flex-1 justify-center">
             <Text className="text-3xl font-bold text-foreground">Add an API key</Text>
             <Text className="text-base text-muted leading-relaxed mt-3">
-              For Gemini, open Google AI Studio, create an API key, copy it, then return to Jarvis and paste it below. This key enables AI chat. Google account services such as Gmail are separate and are not needed here.
+              Open the selected provider’s official key page, create an API key, copy it, then return to Jarvis and paste it below. Gemini keys come from Google AI Studio. OpenAI keys enable GPT models. This is separate from signing into a Google account.
             </Text>
             <Pressable
               onPress={() => void Linking.openURL(getProvider(providerId).keyUrl)}
@@ -164,9 +175,10 @@ export default function OnboardingScreen() {
                 <MaterialIcons name={showKey ? 'visibility' : 'visibility-off'} size={20} color="#8a92a0" />
               </Pressable>
             </View>
-            <Text className="text-xs text-muted mt-2">The key is saved on this device after Jarvis successfully tests it. You can skip setup, but live AI chat will remain unavailable until a key is added.</Text>
+            <Pressable onPress={() => void pasteKey()} className="self-start flex-row items-center gap-2 mt-3 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2"><MaterialIcons name="content-paste" size={16} color="#18d5ff" /><Text className="text-xs font-semibold text-primary">Paste copied key</Text></Pressable>
+            <Text className="text-xs text-muted mt-2">The key is saved in Android secure storage after Jarvis successfully tests it. You can skip setup and use offline commands, then add a key later in Settings.</Text>
             <ConnectionResultCard status={verificationStatus} message={verificationMessage} onRetry={() => void verifyKey()} />
-            {verificationStatus === 'success' ? <Text className="text-xs text-success mt-3">Gemini replied successfully. Your key and working model have been saved.</Text> : null}
+            {verificationStatus === 'success' ? <Text className="text-xs text-success mt-3">{getProvider(providerId).name} replied successfully. Your key and working model have been saved.</Text> : null}
           </View>
         )}
 

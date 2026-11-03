@@ -25,6 +25,25 @@ module.exports = function withJarvisAccessibility(config) {
     return mod;
   });
 
+  config = withAndroidManifest(config, (mod) => {
+    mod.modResults.manifest.queries = mod.modResults.manifest.queries || [];
+    const packages = [
+      'com.google.android.googlequicksearchbox',
+      'com.google.android.apps.bard',
+      'com.google.android.apps.gemini',
+      'com.android.chrome',
+      'com.samsung.android.bixby.agent',
+      'com.samsung.android.bixby.service',
+    ];
+    const existing = new Set((mod.modResults.manifest.queries[0]?.package || []).map((item) => item.$?.['android:name']));
+    const packageEntries = packages.filter((name) => !existing.has(name)).map((name) => ({ $: { 'android:name': name } }));
+    if (packageEntries.length) {
+      if (!mod.modResults.manifest.queries[0]) mod.modResults.manifest.queries.push({ package: packageEntries });
+      else mod.modResults.manifest.queries[0].package = [...(mod.modResults.manifest.queries[0].package || []), ...packageEntries];
+    }
+    return mod;
+  });
+
   config = withDangerousMod(config, ['android', async (mod) => {
     const root = mod.modRequest.platformProjectRoot;
     const xmlDir = path.join(root, 'app/src/main/res/xml');

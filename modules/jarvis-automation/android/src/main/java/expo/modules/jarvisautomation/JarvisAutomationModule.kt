@@ -41,6 +41,51 @@ class JarvisAutomationModule : Module() {
       service.typeIntoLabeledField(label, text)
     }
 
+    AsyncFunction("openApp") { app: String ->
+      val activity = appContext.currentActivity
+        ?: throw IllegalStateException("Jarvis needs an active screen to open another app.")
+      val packages = when (app.lowercase()) {
+        "google" -> listOf("com.google.android.googlequicksearchbox")
+        "gemini" -> listOf("com.google.android.apps.bard", "com.google.android.apps.gemini")
+        "chrome" -> listOf("com.android.chrome")
+        "bixby" -> listOf("com.samsung.android.bixby.agent", "com.samsung.android.bixby.service")
+        else -> throw IllegalArgumentException("Unsupported app shortcut.")
+      }
+      val launch = packages.firstNotNullOfOrNull { activity.packageManager.getLaunchIntentForPackage(it) }
+      if (launch != null) {
+        activity.startActivity(launch)
+        true
+      } else {
+        val fallback = when (app.lowercase()) {
+          "google" -> "https://www.google.com/"
+          "gemini" -> "https://gemini.google.com/"
+          "chrome" -> "https://www.google.com/chrome/"
+          else -> "https://www.samsung.com/apps/bixby/"
+        }
+        activity.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(fallback)))
+        false
+      }
+    }
+
+    AsyncFunction("openClock") { kind: String, seconds: Int ->
+      require(kind == "alarm" || kind == "timer") { "Clock action must be alarm or timer." }
+      val activity = appContext.currentActivity
+        ?: throw IllegalStateException("Jarvis needs an active screen to open Clock.")
+      val action = if (kind == "timer") android.provider.AlarmClock.ACTION_SET_TIMER else android.provider.AlarmClock.ACTION_SET_ALARM
+      val intent = Intent(action)
+      if (kind == "timer" && seconds > 0) {
+        require(seconds in 1..86400) { "Timer length must be 1-86400 seconds." }
+        intent.putExtra(android.provider.AlarmClock.EXTRA_LENGTH, seconds)
+        intent.putExtra(android.provider.AlarmClock.EXTRA_SKIP_UI, false)
+        intent.putExtra(android.provider.AlarmClock.EXTRA_MESSAGE, "Jarvis focus timer")
+      }
+      if (intent.resolveActivity(activity.packageManager) == null) {
+        throw IllegalStateException("No Clock app accepted the $kind request.")
+      }
+      activity.startActivity(intent)
+      true
+    }
+
     AsyncFunction("setAlarm") { hour: Int, minute: Int, label: String ->
       require(hour in 0..23) { "Alarm hour must be from 0 to 23." }
       require(minute in 0..59) { "Alarm minute must be from 0 to 59." }
