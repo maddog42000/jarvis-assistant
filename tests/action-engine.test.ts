@@ -36,6 +36,12 @@ describe('Jarvis action engine', () => {
     expect(calls).toEqual(['search', 'clock']);
   });
 
+  it('validates timer durations and only allows them for timers', () => {
+    expect(validateActionStep({ id: 'timer', action: 'openClock', args: { kind: 'timer', seconds: 1500 } }).ok).toBe(true);
+    expect(validateActionStep({ id: 'timer', action: 'openClock', args: { kind: 'timer', seconds: 0 } }).ok).toBe(false);
+    expect(validateActionStep({ id: 'alarm', action: 'openClock', args: { kind: 'alarm', seconds: 1500 } }).ok).toBe(false);
+  });
+
   it('allows opt-in accessibility actions but blocks sensitive field labels', () => {
     expect(validateActionStep({ id: 'settings', action: 'openAccessibilitySettings', args: {} }).ok).toBe(true);
     expect(validateActionStep({ id: 'alarm', action: 'setAlarm', args: { hour: 7, minute: 30, label: 'Work' } }).ok).toBe(true);
