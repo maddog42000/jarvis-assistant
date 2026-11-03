@@ -55,6 +55,15 @@ jobs:
       - name: Install JavaScript dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: TypeScript validation
+        run: pnpm check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit tests
+        run: pnpm test
+
       - name: Generate native Android project
         run: npx expo prebuild --platform android --no-install --clean
 
