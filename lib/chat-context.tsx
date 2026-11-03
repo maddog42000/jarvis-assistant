@@ -125,12 +125,14 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const loadApiConfig = useCallback(async () => {
     try {
-      let stored = await SecureStore.getItemAsync(API_CONFIG_KEY);
+      let stored = Platform.OS === 'web' ? await AsyncStorage.getItem(API_CONFIG_KEY) : await SecureStore.getItemAsync(API_CONFIG_KEY);
       if (!stored) {
         stored = await AsyncStorage.getItem(API_CONFIG_KEY);
         if (stored) {
-          await SecureStore.setItemAsync(API_CONFIG_KEY, stored);
-          await AsyncStorage.removeItem(API_CONFIG_KEY);
+          if (Platform.OS !== 'web') {
+            await SecureStore.setItemAsync(API_CONFIG_KEY, stored);
+            await AsyncStorage.removeItem(API_CONFIG_KEY);
+          }
         }
       }
       if (stored) setApiConfig(normalizeStoredConfig(JSON.parse(stored)));
@@ -185,7 +187,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       return updatedConfig;
     });
     try {
-      await SecureStore.setItemAsync(API_CONFIG_KEY, JSON.stringify(updatedConfig));
+      if (Platform.OS === 'web') await AsyncStorage.setItem(API_CONFIG_KEY, JSON.stringify(updatedConfig));
+      else await SecureStore.setItemAsync(API_CONFIG_KEY, JSON.stringify(updatedConfig));
     } catch (error) {
       console.error('Failed to save API config securely:', error);
       throw new Error('Jarvis could not securely save this provider key. Please check device lock/security settings and try again.');
