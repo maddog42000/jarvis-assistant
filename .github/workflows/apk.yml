@@ -9,6 +9,7 @@ on:
       - "jarvis-3.4.1/android-domexception-fix"
       - "jarvis-3.5/**"
       - "jarvis-3.6/**"
+      - "jarvis-2.1/**"
     tags:
       - "apk-v*"
 
