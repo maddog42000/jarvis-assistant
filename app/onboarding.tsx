@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
@@ -24,6 +25,16 @@ export default function OnboardingScreen() {
   const finish = async () => {
     await completeOnboarding();
     router.replace('/(tabs)/chat');
+  };
+
+  const pasteKey = async () => {
+    try {
+      const copied = (await Clipboard.getStringAsync()).trim();
+      if (!copied) { Alert.alert('Clipboard is empty', 'Copy your provider API key first, then tap Paste key.'); return; }
+      setApiKey(copied);
+      setVerificationStatus('idle');
+      setVerificationMessage('Key pasted. Tap Verify key to test and save it.');
+    } catch { Alert.alert('Paste unavailable', 'Paste the API key directly into the field.'); }
   };
 
   const verifyKey = async () => {
@@ -164,9 +175,10 @@ export default function OnboardingScreen() {
                 <MaterialIcons name={showKey ? 'visibility' : 'visibility-off'} size={20} color="#8a92a0" />
               </Pressable>
             </View>
-            <Text className="text-xs text-muted mt-2">The key is saved on this device after Jarvis successfully tests it. You can skip setup, but live AI chat will remain unavailable until a key is added.</Text>
+            <Pressable onPress={() => void pasteKey()} className="self-start flex-row items-center gap-2 mt-3 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2"><MaterialIcons name="content-paste" size={16} color="#18d5ff" /><Text className="text-xs font-semibold text-primary">Paste copied key</Text></Pressable>
+            <Text className="text-xs text-muted mt-2">The key is saved in Android secure storage after Jarvis successfully tests it. You can skip setup and use offline commands, then add a key later in Settings.</Text>
             <ConnectionResultCard status={verificationStatus} message={verificationMessage} onRetry={() => void verifyKey()} />
-            {verificationStatus === 'success' ? <Text className="text-xs text-success mt-3">Gemini replied successfully. Your key and working model have been saved.</Text> : null}
+            {verificationStatus === 'success' ? <Text className="text-xs text-success mt-3">{getProvider(providerId).name} replied successfully. Your key and working model have been saved.</Text> : null}
           </View>
         )}
 
