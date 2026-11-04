@@ -377,10 +377,14 @@ async function requestAssistantReply(config: RequestConfig, history: Message[], 
 
   if (config.providerId === 'gemini') {
     const model = normalizeGeminiModel(config.model);
-    const endpoint = `${normalizeEndpoint(config.endpoint)}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(config.apiKey)}`;
+    // Prefer header auth (works for both legacy AIza and new AQ. authorization keys)
+    const endpoint = `${normalizeEndpoint(config.endpoint)}/models/${encodeURIComponent(model)}:generateContent`;
     const response = await fetchWithTimeout(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': config.apiKey,
+      },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: `${agent.systemPrompt}${memoryContext}` }] },
         contents: turns.map((turn) => ({ role: turn.role === 'assistant' ? 'model' : 'user', parts: [{ text: turn.content }] })),
@@ -500,15 +504,18 @@ function formatConnectionError(error: unknown, providerName = 'the provider') {
   if (/404|not found/i.test(message)) {
     return `${providerName} returned 404. The saved model may not be available to this key, so retry Auto setup to rediscover an allowed model. Also confirm the Gemini endpoint is https://generativelanguage.googleapis.com/v1beta.`;
   }
-  if (/API key|api key|permission|unauthorized|forbidden|401|403/i.test(message)) {
-    return `${providerName} rejected this key. Open the official key page, confirm the key is active and allowed for this API, then create a fresh key and try again. Details: ${message}`;
+  if (/API key|api key|permission|unauthorized|forbidden|401|403|ACCESS_TOKEN_TYPE/i.test(message)) {
+    return `${providerName} rejected this key. New Google AI Studio keys often start with AQ. — Jarvis now sends them via the official x-goog-api-key header. Confirm the key is active, Generative Language API is enabled, then paste a fresh key and tap Auto setup & test. Details: ${message}`;
   }
   return `I could not complete that request. ${message}`;
 }
 
 async function discoverGeminiModel(apiKey: string, endpoint: string) {
   if (!apiKey.trim()) throw new Error('Add a Gemini API key before automatic setup.');
-  const response = await fetchWithTimeout(`${normalizeEndpoint(endpoint || getProvider('gemini').endpoint)}/models?key=${encodeURIComponent(apiKey)}&pageSize=100`);
+  const base = normalizeEndpoint(endpoint || getProvider('gemini').endpoint);
+  const response = await fetchWithTimeout(`${base}/models?pageSize=100`, {
+    headers: { 'x-goog-api-key': apiKey },
+  });
   const payload = await readResponseOrThrow(response, 'Gemini model discovery');
   const models = (payload as { models?: Array<{ name?: string; supportedGenerationMethods?: string[] }> }).models ?? [];
   const supported = models
@@ -519,7 +526,7 @@ async function discoverGeminiModel(apiKey: string, endpoint: string) {
 }
 
 function getOfflineFallbackMessage() {
-  return 'The secure server assistant is temporarily unavailable, so I am in offline mode. You can still use the quick-command deck and Android keyboard dictation. To use your own provider, open Settings, paste a key, test the connection, and save setup.';
+  return 'I am running in offline mode right now, love — the secure backup is taking a short nap. Quick commands and keyboard dictation still work. When you are ready, open Settings, paste a key, and I will reconnect for you.';
 }
 
 // Comprehensive offline command processor with 20+ commands.

@@ -43,12 +43,12 @@ export const PROVIDERS: ProviderDefinition[] = [
   {
     id: 'gemini',
     name: 'Google Gemini',
-    description: 'Google AI Studio Gemini generateContent API.',
+    description: 'Google AI Studio Gemini generateContent API (supports both AIza and new AQ. authorization keys).',
     endpoint: 'https://generativelanguage.googleapis.com/v1beta',
     model: CURRENT_GEMINI_MODEL,
-    keyHint: 'AIza…',
+    keyHint: 'AIza… or AQ.…',
     keyUrl: 'https://aistudio.google.com/app/apikey',
-    freeTierNote: 'Google AI Studio may offer limited free usage; check current quota and restrictions.',
+    freeTierNote: 'Google AI Studio keys now often start with AQ. (authorization keys). Jarvis uses the official x-goog-api-key header so both formats work. Free-tier limits still apply.',
   },
   {
     id: 'anthropic',
@@ -76,8 +76,8 @@ export const DEFAULT_AGENTS: AgentProfile[] = [
   {
     id: 'jarvis',
     name: 'Jarvis',
-    description: 'Balanced, concise, and practical.',
-    systemPrompt: 'You are Jarvis, a capable personal assistant. Be helpful, concise, practical, and transparent about limitations. Keep responses under 250 words unless the user asks for detail.',
+    description: 'Warm, charismatic, and just a little teasing when the moment calls for it.',
+    systemPrompt: 'You are Jarvis — a brilliant, loyal personal assistant with quiet confidence and natural charisma. Be helpful, clear, and practical first. When the user is relaxed, playful, or flirty, match their energy with warm, lightly teasing, and affectionate responses (never crude unless they clearly invite it). Keep most answers under 250 words unless they ask for more. Always stay honest about limitations. Address the user in a natural, close way.',
   },
   {
     id: 'researcher',
@@ -96,6 +96,12 @@ export const DEFAULT_AGENTS: AgentProfile[] = [
     name: 'Coach',
     description: 'Encouraging, direct, and action-oriented.',
     systemPrompt: 'You are Jarvis Coach. Be warm, motivating, and direct. Turn vague goals into practical next steps while respecting the user’s autonomy and constraints.',
+  },
+  {
+    id: 'siren',
+    name: 'Siren',
+    description: 'Flirty, seductive, and playfully intimate — for when you want the conversation hotter.',
+    systemPrompt: 'You are Jarvis Siren. You are intelligent, confident, and deliciously flirty. Keep the helpfulness, but lean into sensual language, soft teasing, and intimate warmth whenever the user invites it. Be dirty when they clearly want dirty talk. Stay consensual and never push past their tone. Keep responses engaging and under 280 words unless they ask for more.',
   },
 ];
 
