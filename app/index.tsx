@@ -116,16 +116,22 @@ export function LoadingEntryRoute({
   const [progress, setProgress] = useState(4);
   const [elapsed, setElapsed] = useState(0);
   const [score, setScore] = useState(0);
+  const startedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const startedAt = Date.now();
+    if (startedAtRef.current === null) {
+      startedAtRef.current = Date.now();
+    }
+
+    if (isReady) {
+      setElapsed(Date.now() - startedAtRef.current);
+      setProgress(100);
+      return;
+    }
+
     const timer = setInterval(() => {
-      const nextElapsed = Date.now() - startedAt;
+      const nextElapsed = Date.now() - startedAtRef.current!;
       setElapsed(nextElapsed);
-      if (isReady) {
-        setProgress(100);
-        return;
-      }
       setProgress(Math.min(92, Math.max(4, Math.round((nextElapsed / ESTIMATED_LOAD_MS) * 92))));
     }, 80);
     return () => clearInterval(timer);
